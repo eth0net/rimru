@@ -1,36 +1,12 @@
 use actions::Quit;
 use gpui::{
-    App, AppContext, Application, Bounds, ParentElement, Render, Styled, WindowBounds,
-    WindowOptions, div, px, rgb, size,
+    App, AppContext, Application, Bounds, TitlebarOptions, WindowBounds, WindowOptions, px, size,
 };
+use ui::Rimru;
 
 mod actions;
 mod menu;
-
-struct MyApp;
-
-impl Render for MyApp {
-    fn render(
-        &mut self,
-        _window: &mut gpui::Window,
-        _cx: &mut gpui::Context<'_, Self>,
-    ) -> impl gpui::IntoElement {
-        div()
-            .size_full()
-            .flex()
-            .flex_col()
-            .gap_3()
-            .bg(rgb(0x505050))
-            .justify_center()
-            .items_center()
-            .shadow_lg()
-            .border_1()
-            .border_color(rgb(0x0000ff))
-            .text_xl()
-            .text_color(rgb(0xffffff))
-            .child(format!("Hello, {}!", "world"))
-    }
-}
+mod ui;
 
 fn main() {
     env_logger::init();
@@ -47,9 +23,14 @@ fn main() {
         cx.open_window(
             WindowOptions {
                 window_bounds: Some(WindowBounds::Windowed(bounds)),
+                titlebar: Some(TitlebarOptions {
+                    title: Some("Rimru".into()),
+                    appears_transparent: true,
+                    traffic_light_position: None,
+                }),
                 ..Default::default()
             },
-            |_, cx| cx.new(|_| MyApp {}),
+            |_, cx| cx.new(|_| Rimru {}),
         )
         .unwrap();
     });
