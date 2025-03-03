@@ -26,7 +26,7 @@ fn main() {
                 titlebar: Some(TitlebarOptions {
                     title: Some("Rimru".into()),
                     appears_transparent: true,
-                    traffic_light_position: None,
+                    ..Default::default()
                 }),
                 ..Default::default()
             },
