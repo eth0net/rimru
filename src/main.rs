@@ -1,12 +1,13 @@
 use actions::Quit;
 use gpui::{
-    App, AppContext, Application, Bounds, TitlebarOptions, WindowBounds, WindowOptions, px, size,
+    App, Application, Bounds, TitlebarOptions, WindowBounds, WindowOptions, prelude::*, px, size,
 };
-use ui::Rimru;
+use workspace::Workspace;
 
 mod actions;
 mod menu;
-mod ui;
+mod theme;
+mod workspace;
 
 fn main() {
     env_logger::init();
@@ -30,7 +31,7 @@ fn main() {
                 }),
                 ..Default::default()
             },
-            |_, cx| cx.new(|_| Rimru {}),
+            |_, cx| cx.new(Workspace::new),
         )
         .unwrap();
     });

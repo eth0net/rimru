@@ -7,3 +7,4 @@ edition = "2024"
 env_logger = "0.11.6"
 gpui = { git = "https://github.com/zed-industries/zed" }
 log = "0.4.26"
+smallvec = "1.14.0"

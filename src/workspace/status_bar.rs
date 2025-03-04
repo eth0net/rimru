@@ -32,7 +32,7 @@ impl Render for StatusBar {
             .items_center()
             .p_2()
             .border_t_1()
-            .border_color(rgb(0x666666))
+            .border_color(rgb(0x30363d))
             .text_sm()
             .child("status bar is wip".to_string())
     }
