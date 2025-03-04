@@ -1,7 +1,8 @@
-use gpui::prelude::*;
-use gpui::{Pixels, Window, div, px, rgb};
+use gpui::{Pixels, Window, div, prelude::*, px, rgb};
 
-pub(crate) struct StatusBar;
+use crate::theme::colors;
+
+pub struct StatusBar;
 
 impl StatusBar {
     #[cfg(not(target_os = "windows"))]
@@ -32,7 +33,7 @@ impl Render for StatusBar {
             .items_center()
             .p_2()
             .border_t_1()
-            .border_color(rgb(0x30363d))
+            .border_color(rgb(colors::BORDER))
             .text_sm()
             .child("status bar is wip".to_string())
     }

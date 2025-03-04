@@ -1,5 +1,4 @@
-use gpui::{Decorations, MouseButton, prelude::*};
-use gpui::{Pixels, Window, div, px, rgb};
+use gpui::{Decorations, MouseButton, Pixels, Window, div, prelude::*, px, rgb};
 use platforms::{PlatformStyle, macos};
 
 use crate::theme::{self, colors};
@@ -96,15 +95,5 @@ impl Render for TitleBar {
                             .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation()),
                     ),
             )
-        // todo: from here
-        // .flex()
-        // .flex_row()
-        // .items_center()
-        // .p_2()
-        // .pl_16()
-        // .border_b_1()
-        // .border_color(rgb(0x30363d))
-        // .text_sm()
-        // .child("rimru".to_string())
     }
 }
