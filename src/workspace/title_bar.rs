@@ -1,24 +1,28 @@
-use gpui::{Decorations, MouseButton, Pixels, Window, div, prelude::*, px, rgb};
+use gpui::{Context, Decorations, IntoElement, Pixels, Window, div, prelude::*, px, rgb};
 use platforms::{PlatformStyle, macos};
 
-use crate::theme::{self, colors};
+use crate::theme::{self, colours};
 
 mod platforms;
 
 pub struct TitleBar {
     platform_style: PlatformStyle,
+    // should_move: bool, // todo(linux)
 }
 
 impl TitleBar {
     pub fn new() -> Self {
         let platform_style = PlatformStyle::platform();
 
-        Self { platform_style }
+        Self {
+            platform_style,
+            // should_move: false, // todo(linux)
+        }
     }
 
     #[cfg(not(target_os = "windows"))]
     pub fn height(window: &mut Window) -> Pixels {
-        (1.5 * window.rem_size()).max(px(34.0))
+        (1.75 * window.rem_size()).max(px(34.0))
     }
 
     #[cfg(target_os = "windows")]
@@ -29,27 +33,31 @@ impl TitleBar {
 }
 
 impl Render for TitleBar {
-    fn render(
-        &mut self,
-        window: &mut Window,
-        _cx: &mut gpui::Context<'_, Self>,
-    ) -> impl gpui::IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let height = Self::height(window);
+        // todo(linux): implement window controls
+        // let supported_controls = window.window_controls();
         let decorations = window.window_decorations();
-        let titlebar_color = rgb(colors::TITLE_BAR_BACKGROUND);
-        // let titlebar_color = cx.theme().colors().title_bar_background;
+        let titlebar_colour = rgb(colours::TITLE_BAR_BACKGROUND);
+        // todo(linux): implement titlebar colour
+        // let titlebar_colour = if cfg!(any(target_os = "linux", target_os = "freebsd")) {
+        //     if window.is_window_active() && !self.should_move {
+        //         rgb(colours::TITLE_BAR_BACKGROUND)
+        //     } else {
+        //         rgb(colours::TITLE_BAR_INACTIVE_BACKGROUND)
+        //     }
+        // } else {
+        //     rgb(colours::TITLE_BAR_BACKGROUND)
+        // };
 
         div()
             .id("title-bar")
             .w_full()
             .h(height)
             .map(|this| {
-                if window.is_fullscreen() {
-                    this.pl_2()
-                } else if self.platform_style == PlatformStyle::Mac {
-                    this.pl(px(macos::TRAFFIC_LIGHT_PADDING))
-                } else {
-                    this.pl_2()
+                match !window.is_fullscreen() && self.platform_style == PlatformStyle::Mac {
+                    true => this.pl(px(macos::TRAFFIC_LIGHT_PADDING)),
+                    false => this.pl_2(),
                 }
             })
             .map(|el| match decorations {
@@ -64,9 +72,9 @@ impl Render for TitleBar {
                     // this border is to avoid a transparent gap in the rounded corners
                     .mt(px(-1.))
                     .border(px(1.))
-                    .border_color(titlebar_color),
+                    .border_color(titlebar_colour),
             })
-            .bg(titlebar_color)
+            .bg(titlebar_colour)
             .content_stretch()
             .child(
                 div()
@@ -75,7 +83,7 @@ impl Render for TitleBar {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .w_full()
+                    .size_full()
                     // Note: On Windows the title bar behavior is handled by the platform implementation.
                     .when(self.platform_style != PlatformStyle::Windows, |this| {
                         this.on_click(|event, window, _| {
@@ -86,14 +94,58 @@ impl Render for TitleBar {
                     })
                     .child(
                         div()
+                            .id("title")
                             .flex()
                             .flex_row()
                             .items_center()
                             .gap_1()
-                            .text_sm() // todo: remove?
-                            .child("rimru".to_string())
-                            .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation()),
+                            .text_sm()
+                            .child("rimru".to_string()),
                     ),
             )
+            .when(!window.is_fullscreen(), |title_bar| {
+                match self.platform_style {
+                    PlatformStyle::Mac => title_bar,
+                    // todo(linux): implement titlebar for linux
+                    // PlatformStyle::Linux => {
+                    //     if matches!(decorations, Decorations::Client { .. }) {
+                    //         title_bar
+                    //             .child(LinuxWindowControls::new(close_action))
+                    //             .when(supported_controls.window_menu, |titlebar| {
+                    //                 titlebar
+                    //                     .on_mouse_down(MouseButton::Right, move |ev, window, _| {
+                    //                         window.show_window_menu(ev.position)
+                    //                     })
+                    //             })
+                    //             .on_mouse_move(cx.listener(move |this, _ev, window, _| {
+                    //                 if this.should_move {
+                    //                     this.should_move = false;
+                    //                     window.start_window_move();
+                    //                 }
+                    //             }))
+                    //             .on_mouse_down_out(cx.listener(move |this, _ev, _window, _cx| {
+                    //                 this.should_move = false;
+                    //             }))
+                    //             .on_mouse_up(
+                    //                 MouseButton::Left,
+                    //                 cx.listener(move |this, _ev, _window, _cx| {
+                    //                     this.should_move = false;
+                    //                 }),
+                    //             )
+                    //             .on_mouse_down(
+                    //                 MouseButton::Left,
+                    //                 cx.listener(move |this, _ev, _window, _cx| {
+                    //                     this.should_move = true;
+                    //                 }),
+                    //             )
+                    //     } else {
+                    //         title_bar
+                    //     }
+                    // }
+                    // todo(windows): implement titlebar for windows
+                    // PlatformStyle::Windows => title_bar.child(WindowsWindowControls::new(height)),
+                    _ => title_bar,
+                }
+            })
     }
 }

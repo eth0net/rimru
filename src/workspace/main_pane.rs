@@ -1,4 +1,4 @@
-use gpui::{Window, div, prelude::*};
+use gpui::{Context, IntoElement, Window, div, prelude::*};
 use mod_details::ModDetails;
 use mod_list::ModList;
 
@@ -8,11 +8,7 @@ mod mod_list;
 pub struct MainPane;
 
 impl Render for MainPane {
-    fn render(
-        &mut self,
-        _window: &mut Window,
-        cx: &mut gpui::Context<'_, Self>,
-    ) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let mods = [
             ("mod.one".to_string(), "Mod One".to_string()),
             ("mod.two".to_string(), "Mod Two".to_string()),

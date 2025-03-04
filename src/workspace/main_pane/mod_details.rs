@@ -1,13 +1,9 @@
-use gpui::{div, prelude::*};
+use gpui::{Context, IntoElement, Window, div, prelude::*};
 
 pub struct ModDetails;
 
 impl Render for ModDetails {
-    fn render(
-        &mut self,
-        _window: &mut gpui::Window,
-        _cx: &mut gpui::Context<'_, Self>,
-    ) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .flex()
             .flex_col()

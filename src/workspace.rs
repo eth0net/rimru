@@ -1,13 +1,13 @@
 use gpui::{
-    App, Bounds, CursorStyle, Decorations, Div, Entity, Global, Hsla, MouseButton, Pixels, Point,
-    ResizeEdge, Size, Stateful, Tiling, Window, canvas, div, point, prelude::*, px, rgb, size,
-    transparent_black,
+    App, Bounds, Context, CursorStyle, Decorations, Div, Entity, Global, Hsla, IntoElement,
+    MouseButton, Pixels, Point, ResizeEdge, Size, Stateful, Tiling, Window, canvas, div, point,
+    prelude::*, px, rgb, size, transparent_black,
 };
 use main_pane::MainPane;
 use status_bar::StatusBar;
 use title_bar::TitleBar;
 
-use crate::theme::{self, colors};
+use crate::theme::{self, colours};
 
 mod main_pane;
 mod status_bar;
@@ -33,11 +33,7 @@ impl Workspace {
 
 // based on zed workspace
 impl Render for Workspace {
-    fn render(
-        &mut self,
-        window: &mut gpui::Window,
-        cx: &mut gpui::Context<'_, Self>,
-    ) -> impl gpui::IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         client_side_decorations(
             div()
                 // .key_context(context)
@@ -49,13 +45,13 @@ impl Render for Workspace {
                 .gap_0()
                 .justify_start()
                 .items_start()
-                .text_color(rgb(colors::TEXT))
+                .text_color(rgb(colours::TEXT))
                 .overflow_hidden()
                 .child(self.title_bar.clone())
                 .child(
                     div()
                         .id("workspace")
-                        .bg(rgb(colors::BACKGROUND))
+                        .bg(rgb(colours::BACKGROUND))
                         .relative()
                         .flex_1()
                         .w_full()
@@ -64,7 +60,7 @@ impl Render for Workspace {
                         .overflow_hidden()
                         .border_t_1()
                         .border_b_1()
-                        .border_color(rgb(colors::BORDER))
+                        .border_color(rgb(colours::BORDER))
                         .child(self.main_pane.clone())
                         .child(self.status_bar.clone()),
                 ),
@@ -161,7 +157,7 @@ pub fn client_side_decorations(
                 .map(|div| match decorations {
                     Decorations::Server => div,
                     Decorations::Client { tiling } => div
-                        .border_color(rgb(colors::BORDER))
+                        .border_color(rgb(colours::BORDER))
                         // .border_color(cx.theme().colors().border)
                         .when(!(tiling.top || tiling.right), |div| {
                             div.rounded_tr(theme::CLIENT_SIDE_DECORATION_ROUNDING)

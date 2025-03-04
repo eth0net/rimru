@@ -1,6 +1,6 @@
-use gpui::{MouseButton, Window, div, prelude::*, rgb, uniform_list};
+use gpui::{Context, IntoElement, MouseButton, Window, div, prelude::*, rgb, uniform_list};
 
-use crate::theme::colors;
+use crate::theme::colours;
 
 pub struct ModList {
     pub(crate) name: String,
@@ -14,11 +14,7 @@ impl ModList {
 }
 
 impl Render for ModList {
-    fn render(
-        &mut self,
-        _window: &mut Window,
-        cx: &mut gpui::Context<'_, Self>,
-    ) -> impl gpui::IntoElement {
+    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
             .id("mod-list")
             .flex()
@@ -26,7 +22,7 @@ impl Render for ModList {
             .h_full()
             .w_1_4()
             .border_r_1()
-            .border_color(rgb(colors::BORDER))
+            .border_color(rgb(colours::BORDER))
             .child(
                 div()
                     .id("mod-list-header")
@@ -54,7 +50,7 @@ impl Render for ModList {
                                     .on_click({
                                         let mod_meta = mod_meta.clone();
                                         move |event, _window, _cx| {
-                                            // log::debug!("click {mod_meta:?} {event:?}");
+                                            log::debug!("click {mod_meta:?} {event:?}");
                                             match event.down.button {
                                                 MouseButton::Left => {
                                                     match event.down.click_count {

@@ -1,6 +1,6 @@
-use gpui::{Pixels, Window, div, prelude::*, px, rgb};
+use gpui::{Context, IntoElement, Pixels, Window, div, prelude::*, px, rgb};
 
-use crate::theme::colors;
+use crate::theme::colours;
 
 pub struct StatusBar;
 
@@ -18,11 +18,7 @@ impl StatusBar {
 }
 
 impl Render for StatusBar {
-    fn render(
-        &mut self,
-        window: &mut Window,
-        _cx: &mut gpui::Context<'_, Self>,
-    ) -> impl gpui::IntoElement {
+    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
         let height = Self::height(window);
 
         div()
@@ -33,7 +29,7 @@ impl Render for StatusBar {
             .items_center()
             .p_2()
             .border_t_1()
-            .border_color(rgb(colors::BORDER))
+            .border_color(rgb(colours::BORDER))
             .text_sm()
             .child("status bar is wip".to_string())
     }
