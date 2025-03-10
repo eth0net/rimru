@@ -6,12 +6,12 @@ use gpui::{
 use crate::theme::colours;
 
 pub struct ModList {
-    pub(crate) name: SharedString,
-    pub(crate) mods: Vec<(SharedString, SharedString)>,
+    name: SharedString,
+    mods: Vec<(String, String)>,
 }
 
 impl ModList {
-    pub fn new(name: SharedString, mods: Vec<(SharedString, SharedString)>) -> Self {
+    pub fn new(name: SharedString, mods: Vec<(String, String)>) -> Self {
         Self { name, mods }
     }
 }
@@ -52,22 +52,10 @@ impl Render for ModList {
                                     .cursor_pointer()
                                     .bg(rgba(0x77777777))
                                     .px_2()
-                                    .on_mouse_down(MouseButton::Left, {
-                                        let mod_meta = mod_meta.clone();
-                                        move |event, _window, _cx| {
-                                            log::debug!("mouse down {mod_meta:?} {event:?}");
-                                        }
-                                    })
-                                    .on_mouse_up(MouseButton::Left, {
-                                        let mod_meta = mod_meta.clone();
-                                        move |event, _window, _cx| {
-                                            log::debug!("mouse up {mod_meta:?} {event:?}");
-                                        }
-                                    })
                                     .on_click({
                                         let mod_meta = mod_meta.clone();
                                         move |event, _window, _cx| {
-                                            log::debug!("click {mod_meta:?} {event:?}");
+                                            // log::debug!("click {mod_meta:?} {event:?}");
                                             match event.down.button {
                                                 MouseButton::Left => {
                                                     match event.down.click_count {

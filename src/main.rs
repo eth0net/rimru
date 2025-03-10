@@ -1,13 +1,7 @@
-use actions::Quit;
 use gpui::{
     App, Application, Bounds, TitlebarOptions, WindowBounds, WindowOptions, prelude::*, px, size,
 };
-use workspace::Workspace;
-
-mod actions;
-mod menu;
-mod theme;
-mod workspace;
+use rimru::{actions::Quit, menu, workspace::Workspace};
 
 fn main() {
     env_logger::init();

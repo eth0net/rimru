@@ -7,15 +7,17 @@ use main_pane::MainPane;
 use status_bar::StatusBar;
 use title_bar::TitleBar;
 
-use crate::theme::{self, colours};
+use crate::{
+    project::Project,
+    theme::{self, colours},
+};
 
 mod main_pane;
 mod status_bar;
 mod title_bar;
 
-// pub struct State {}
-
 pub struct Workspace {
+    project: Entity<Project>,
     main_pane: Entity<MainPane>,
     status_bar: Entity<StatusBar>,
     title_bar: Entity<TitleBar>,
@@ -23,11 +25,25 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(cx: &mut Context<Self>) -> Self {
+        let project = cx.new(|_| Project {
+            active_mods: vec!["mod.one".into()],
+            mods: vec![
+                ("mod.one".into(), "Mod One".into()),
+                ("mod.two".into(), "Mod Two".into()),
+                ("mod.three".into(), "Mod Three".into()),
+            ],
+        });
+
         Self {
-            main_pane: cx.new(|_| MainPane {}),
+            project: project.clone(),
+            main_pane: cx.new(|cx| MainPane::new(cx, project.clone())),
             status_bar: cx.new(|_| StatusBar {}),
             title_bar: cx.new(|_| TitleBar::new()),
         }
+    }
+
+    pub fn project(&self) -> &Entity<Project> {
+        &self.project
     }
 }
 
@@ -50,7 +66,6 @@ impl Render for Workspace {
                 .child(self.title_bar.clone())
                 .child(
                     div()
-                        .id("workspace")
                         .bg(rgb(colours::BACKGROUND))
                         .relative()
                         .flex_1()
