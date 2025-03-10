@@ -1,4 +1,4 @@
-use gpui::{Context, IntoElement, Window, div, prelude::*};
+use gpui::{Context, IntoElement, SharedString, Window, div, prelude::*};
 use mod_details::ModDetails;
 use mod_list::ModList;
 
@@ -9,13 +9,15 @@ pub struct MainPane;
 
 impl Render for MainPane {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let mods = [
-            ("mod.one".to_string(), "Mod One".to_string()),
-            ("mod.two".to_string(), "Mod Two".to_string()),
-            ("mod.three".to_string(), "Mod Three".to_string()),
+        // this is the list of all mods installed, sourced from the mods directory
+        let mods: Vec<(SharedString, SharedString)> = vec![
+            ("mod.one".into(), "Mod One".into()),
+            ("mod.two".into(), "Mod Two".into()),
+            ("mod.three".into(), "Mod Three".into()),
         ];
 
-        let active_ids = ["mod.one".to_string()];
+        // this is the list of active mod ids, sourced from the config or save file
+        let active_ids: Vec<SharedString> = vec!["mod.one".into()];
 
         let active_mods: Vec<_> = mods
             .iter()
@@ -34,8 +36,8 @@ impl Render for MainPane {
             .flex_grow()
             .flex()
             .flex_row()
-            .child(cx.new(|_| ModList::new("Inactive".to_string(), inactive_mods)))
-            .child(cx.new(|_| ModList::new("Active".to_string(), active_mods)))
+            .child(cx.new(|_| ModList::new("Inactive".into(), inactive_mods)))
+            .child(cx.new(|_| ModList::new("Active".into(), active_mods)))
             .child(cx.new(|_| ModDetails {}))
     }
 }

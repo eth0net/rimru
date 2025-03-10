@@ -87,6 +87,7 @@ impl Render for TitleBar {
                     // Note: On Windows the title bar behavior is handled by the platform implementation.
                     .when(self.platform_style != PlatformStyle::Windows, |this| {
                         this.on_click(|event, window, _| {
+                            log::debug!("titlebar clicked");
                             if event.up.click_count == 2 {
                                 window.zoom_window();
                             }

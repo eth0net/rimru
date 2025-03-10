@@ -1,14 +1,17 @@
-use gpui::{Context, IntoElement, MouseButton, Window, div, prelude::*, rgb, uniform_list};
+use gpui::{
+    Context, IntoElement, MouseButton, SharedString, Window, div, prelude::*, rgb, rgba,
+    uniform_list,
+};
 
 use crate::theme::colours;
 
 pub struct ModList {
-    pub(crate) name: String,
-    pub(crate) mods: Vec<(String, String)>,
+    pub(crate) name: SharedString,
+    pub(crate) mods: Vec<(SharedString, SharedString)>,
 }
 
 impl ModList {
-    pub fn new(name: String, mods: Vec<(String, String)>) -> Self {
+    pub fn new(name: SharedString, mods: Vec<(SharedString, SharedString)>) -> Self {
         Self { name, mods }
     }
 }
@@ -16,7 +19,7 @@ impl ModList {
 impl Render for ModList {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         div()
-            .id("mod-list")
+            // .id("mod-list")
             .flex()
             .flex_col()
             .h_full()
@@ -25,7 +28,7 @@ impl Render for ModList {
             .border_color(rgb(colours::BORDER))
             .child(
                 div()
-                    .id("mod-list-header")
+                    // .id(("list", cx.entity_id()))
                     .flex()
                     .flex_row()
                     .justify_center()
@@ -35,7 +38,8 @@ impl Render for ModList {
                     .child(self.name.clone()),
             )
             .child(
-                uniform_list(cx.entity().clone(), "mods", self.mods.len(), {
+                uniform_list(cx.entity().clone(), self.name.clone(), self.mods.len(), {
+                    let list_name = self.name.clone();
                     let mods = self.mods.clone();
                     move |_this, range, _window, _cx| {
                         let mut items = Vec::new();
@@ -44,9 +48,22 @@ impl Render for ModList {
                             let mod_name = mod_meta.1.clone();
                             items.push(
                                 div()
-                                    .id(ix)
+                                    .id((list_name.clone(), ix))
                                     .cursor_pointer()
+                                    .bg(rgba(0x77777777))
                                     .px_2()
+                                    .on_mouse_down(MouseButton::Left, {
+                                        let mod_meta = mod_meta.clone();
+                                        move |event, _window, _cx| {
+                                            log::debug!("mouse down {mod_meta:?} {event:?}");
+                                        }
+                                    })
+                                    .on_mouse_up(MouseButton::Left, {
+                                        let mod_meta = mod_meta.clone();
+                                        move |event, _window, _cx| {
+                                            log::debug!("mouse up {mod_meta:?} {event:?}");
+                                        }
+                                    })
                                     .on_click({
                                         let mod_meta = mod_meta.clone();
                                         move |event, _window, _cx| {
@@ -69,7 +86,7 @@ impl Render for ModList {
                                                     // Open context menu
                                                     log::debug!("context menu {mod_meta:?}");
                                                 }
-                                                _ => {}
+                                                _ => log::debug!("unhandled click {mod_meta:?}"),
                                             }
                                         }
                                     })

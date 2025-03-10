@@ -158,7 +158,6 @@ pub fn client_side_decorations(
                     Decorations::Server => div,
                     Decorations::Client { tiling } => div
                         .border_color(rgb(colours::BORDER))
-                        // .border_color(cx.theme().colors().border)
                         .when(!(tiling.top || tiling.right), |div| {
                             div.rounded_tr(theme::CLIENT_SIDE_DECORATION_ROUNDING)
                         })
