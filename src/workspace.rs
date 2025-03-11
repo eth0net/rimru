@@ -9,6 +9,7 @@ use title_bar::TitleBar;
 
 use crate::{
     project::Project,
+    settings::Settings,
     theme::{self, colours},
 };
 
@@ -18,6 +19,7 @@ mod title_bar;
 
 pub struct Workspace {
     project: Entity<Project>,
+    // settings: Entity<Settings>,
     main_pane: Entity<MainPane>,
     status_bar: Entity<StatusBar>,
     title_bar: Entity<TitleBar>,
@@ -25,17 +27,12 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(cx: &mut Context<Self>) -> Self {
-        let project = cx.new(|_| Project {
-            active_mods: vec!["mod.one".into()],
-            mods: vec![
-                ("mod.one".into(), "Mod One".into()),
-                ("mod.two".into(), "Mod Two".into()),
-                ("mod.three".into(), "Mod Three".into()),
-            ],
-        });
+        let settings = cx.new(|_| Settings::new());
+        let project = cx.new(|cx| Project::new(cx, settings.clone()));
 
         Self {
             project: project.clone(),
+            // settings: settings.clone(),
             main_pane: cx.new(|cx| MainPane::new(cx, project.clone())),
             status_bar: cx.new(|_| StatusBar {}),
             title_bar: cx.new(|_| TitleBar::new()),

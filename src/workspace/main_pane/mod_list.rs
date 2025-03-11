@@ -3,15 +3,15 @@ use gpui::{
     uniform_list,
 };
 
-use crate::theme::colours;
+use crate::{project::ModMeta, theme::colours};
 
 pub struct ModList {
     name: SharedString,
-    mods: Vec<(String, String)>,
+    mods: Vec<ModMeta>,
 }
 
 impl ModList {
-    pub fn new(name: SharedString, mods: Vec<(String, String)>) -> Self {
+    pub fn new(name: SharedString, mods: Vec<ModMeta>) -> Self {
         Self { name, mods }
     }
 }
@@ -28,7 +28,6 @@ impl Render for ModList {
             .border_color(rgb(colours::BORDER))
             .child(
                 div()
-                    // .id(("list", cx.entity_id()))
                     .flex()
                     .flex_row()
                     .justify_center()
@@ -45,7 +44,7 @@ impl Render for ModList {
                         let mut items = Vec::new();
                         for ix in range {
                             let mod_meta = mods[ix].clone();
-                            let mod_name = mod_meta.1.clone();
+                            let mod_name = mod_meta.name.clone();
                             items.push(
                                 div()
                                     .id((list_name.clone(), ix))

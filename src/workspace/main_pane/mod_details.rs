@@ -1,6 +1,16 @@
 use gpui::{Context, IntoElement, Window, div, prelude::*};
 
-pub struct ModDetails;
+use crate::project::ModMeta;
+
+pub struct ModDetails {
+    mod_meta: Option<ModMeta>,
+}
+
+impl ModDetails {
+    pub fn new(mod_meta: Option<ModMeta>) -> Self {
+        Self { mod_meta }
+    }
+}
 
 impl Render for ModDetails {
     fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
@@ -25,7 +35,10 @@ impl Render for ModDetails {
                     .flex_col()
                     .px_2()
                     .py_1()
-                    .child("Details Content".to_string()),
+                    .when(self.mod_meta.is_some(), |this| {
+                        let mod_meta = self.mod_meta.as_ref().unwrap();
+                        this.child(mod_meta.name.clone()).child(mod_meta.id.clone())
+                    }),
             )
     }
 }
