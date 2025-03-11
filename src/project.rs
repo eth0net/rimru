@@ -25,7 +25,7 @@ impl Project {
     }
 
     fn load_mods(&mut self, cx: &mut Context<Self>) {
-        log::trace!("loading mods");
+        log::debug!("loading mods");
 
         let (local_mods_dir, steam_mods_dir) = self.settings.read_with(cx, |settings, _| {
             (
@@ -43,7 +43,7 @@ impl Project {
         log::trace!("sorting loaded mods");
         self.mods.sort_by_key(|mod_meta| mod_meta.id.clone());
 
-        log::trace!("finished loading mods");
+        log::debug!("finished loading mods");
     }
 
     fn load_mods_from_dir<F>(&mut self, dir: &PathBuf, mod_fn: F)
@@ -54,8 +54,11 @@ impl Project {
             Ok(entries) => {
                 entries.for_each(|entry| match entry {
                     Ok(entry) => {
-                        if let Some(m) = mod_fn(entry.path()) {
-                            self.mods.push(m)
+                        let path = entry.path();
+                        if path.is_dir() {
+                            if let Some(m) = mod_fn(path) {
+                                self.mods.push(m)
+                            }
                         }
                     }
                     Err(e) => log::warn!("error reading directory entry: {}", e),
