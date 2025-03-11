@@ -2,10 +2,7 @@ use std::{fs::read_dir, path::PathBuf};
 
 use gpui::{Context, Entity};
 
-use crate::{
-    game::mods::{Mod, Source},
-    settings::Settings,
-};
+use crate::{game::mods::Mod, settings::Settings};
 
 pub struct Project {
     pub settings: Entity<Settings>,
@@ -38,10 +35,10 @@ impl Project {
         });
 
         log::trace!("loading local mods from {:?}", local_mods_dir);
-        self.load_mods_from_dir(&local_mods_dir, |_| Source::Local);
+        self.load_mods_from_dir(&local_mods_dir, Mod::new_local);
 
         log::trace!("loading steam mods from {:?}", steam_mods_dir);
-        self.load_mods_from_dir(&steam_mods_dir, |id| Source::Steam { id });
+        self.load_mods_from_dir(&steam_mods_dir, Mod::new_steam);
 
         log::trace!("sorting loaded mods");
         self.mods.sort_by_key(|mod_meta| mod_meta.id.clone());
@@ -49,37 +46,22 @@ impl Project {
         log::trace!("finished loading mods");
     }
 
-    fn load_mods_from_dir<F>(&mut self, dir: &PathBuf, source_fn: F)
+    fn load_mods_from_dir<F>(&mut self, dir: &PathBuf, mod_fn: F)
     where
-        F: Fn(String) -> Source,
+        F: Fn(PathBuf) -> Option<Mod>,
     {
-        if let Ok(entries) = read_dir(dir) {
-            for entry in entries {
-                match entry {
+        match read_dir(dir) {
+            Ok(entries) => {
+                entries.for_each(|entry| match entry {
                     Ok(entry) => {
-                        let path = entry.path();
-                        if !path.is_dir() {
-                            continue;
-                        }
-
-                        // todo: parse about.xml
-
-                        if let Some(dir) = path.file_name().and_then(|name| name.to_str()) {
-                            self.mods.push(Mod {
-                                id: dir.to_string(),   // todo: get id from about.xml
-                                name: dir.to_string(), // todo: get name from about.xml
-                                path: path.clone(),
-                                source: source_fn(dir.to_string()),
-                            });
+                        if let Some(m) = mod_fn(entry.path()) {
+                            self.mods.push(m)
                         }
                     }
-                    Err(e) => {
-                        log::warn!("Error reading directory entry: {}", e);
-                    }
-                }
+                    Err(e) => log::warn!("error reading directory entry: {}", e),
+                });
             }
-        } else {
-            log::warn!("Could not read directory");
+            Err(_) => log::warn!("could not read directory"),
         }
     }
 }
