@@ -3,15 +3,15 @@ use gpui::{
     uniform_list,
 };
 
-use crate::{project::ModMeta, theme::colours};
+use crate::{game::mods::Mod, theme::colours};
 
 pub struct ModList {
     name: SharedString,
-    mods: Vec<ModMeta>,
+    mods: Vec<Mod>,
 }
 
 impl ModList {
-    pub fn new(name: SharedString, mods: Vec<ModMeta>) -> Self {
+    pub fn new(name: SharedString, mods: Vec<Mod>) -> Self {
         Self { name, mods }
     }
 }

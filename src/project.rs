@@ -2,14 +2,17 @@ use std::{fs::read_dir, path::PathBuf};
 
 use gpui::{Context, Entity};
 
-use crate::settings::Settings;
+use crate::{
+    game::mods::{Mod, Source},
+    settings::Settings,
+};
 
 pub struct Project {
     pub settings: Entity<Settings>,
     // this is the list of active mod ids, sourced from the config or save file
     pub active_mods: Vec<String>,
     // this is the list of all mods installed, sourced from the mods directory
-    pub mods: Vec<ModMeta>,
+    pub mods: Vec<Mod>,
 }
 
 impl Project {
@@ -62,7 +65,7 @@ impl Project {
                         // todo: parse about.xml
 
                         if let Some(dir) = path.file_name().and_then(|name| name.to_str()) {
-                            self.mods.push(ModMeta {
+                            self.mods.push(Mod {
                                 id: dir.to_string(),   // todo: get id from about.xml
                                 name: dir.to_string(), // todo: get name from about.xml
                                 path: path.clone(),
@@ -78,39 +81,5 @@ impl Project {
         } else {
             log::warn!("Could not read directory");
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ModMeta {
-    pub id: String,
-    pub name: String,
-    pub path: PathBuf,
-    pub source: Source,
-}
-
-impl ModMeta {
-    pub fn is_local(&self) -> bool {
-        self.source.is_local()
-    }
-
-    pub fn is_steam(&self) -> bool {
-        self.source.is_steam()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Source {
-    Local,
-    Steam { id: String },
-}
-
-impl Source {
-    pub fn is_local(&self) -> bool {
-        matches!(self, Source::Local)
-    }
-
-    pub fn is_steam(&self) -> bool {
-        matches!(self, Source::Steam { .. })
     }
 }

@@ -1,13 +1,13 @@
 use gpui::{Context, IntoElement, Window, div, prelude::*};
 
-use crate::project::ModMeta;
+use crate::game::mods::Mod;
 
 pub struct ModDetails {
-    mod_meta: Option<ModMeta>,
+    mod_meta: Option<Mod>,
 }
 
 impl ModDetails {
-    pub fn new(mod_meta: Option<ModMeta>) -> Self {
+    pub fn new(mod_meta: Option<Mod>) -> Self {
         Self { mod_meta }
     }
 }

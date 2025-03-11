@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use crate::game;
+use crate::game::paths;
 
 pub struct Settings {
     local_mods_dir: PathBuf,
@@ -24,8 +24,8 @@ impl Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            local_mods_dir: game::local_mods_dir(),
-            steam_mods_dir: game::steam_mods_dir(),
+            local_mods_dir: paths::local_mods_dir(),
+            steam_mods_dir: paths::steam_mods_dir(),
         }
     }
 }
