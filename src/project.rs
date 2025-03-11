@@ -20,51 +20,64 @@ impl Project {
             mods: Vec::new(),
         };
         project.load_mods(cx);
+        // todo: detect active mods
         project
     }
 
     fn load_mods(&mut self, cx: &mut Context<Self>) {
         log::trace!("loading mods");
 
-        self.settings.read_with(cx, |settings, _| {
-            log::trace!("loading local mods from {:?}", settings.local_mods_dir());
-            if let Ok(entries) = read_dir(settings.local_mods_dir()) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        if let Some(id) = path.file_name().and_then(|name| name.to_str()) {
-                            self.mods.push(ModMeta {
-                                id: id.to_string(),
-                                name: id.to_string(),
-                                path: path.clone(),
-                                mod_type: ModType::Local,
-                            });
-                        }
-                    }
-                }
-            }
-
-            log::trace!("loading steam mods from {:?}", settings.steam_mods_dir());
-            if let Ok(entries) = read_dir(settings.steam_mods_dir()) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        if let Some(id) = path.file_name().and_then(|name| name.to_str()) {
-                            self.mods.push(ModMeta {
-                                id: id.to_string(),
-                                name: id.to_string(),
-                                path: path.clone(),
-                                mod_type: ModType::Steam,
-                            });
-                        }
-                    }
-                }
-            }
-
-            self.mods.sort_by_key(|mod_meta| mod_meta.id.clone());
-
-            log::trace!("finished loading mods");
+        let (local_mods_dir, steam_mods_dir) = self.settings.read_with(cx, |settings, _| {
+            (
+                settings.local_mods_dir().clone(),
+                settings.steam_mods_dir().clone(),
+            )
         });
+
+        log::trace!("loading local mods from {:?}", local_mods_dir);
+        self.load_mods_from_dir(&local_mods_dir, |_| Source::Local);
+
+        log::trace!("loading steam mods from {:?}", steam_mods_dir);
+        self.load_mods_from_dir(&steam_mods_dir, |id| Source::Steam { id });
+
+        log::trace!("sorting loaded mods");
+        self.mods.sort_by_key(|mod_meta| mod_meta.id.clone());
+
+        log::trace!("finished loading mods");
+    }
+
+    fn load_mods_from_dir<F>(&mut self, dir: &PathBuf, source_fn: F)
+    where
+        F: Fn(String) -> Source,
+    {
+        if let Ok(entries) = read_dir(dir) {
+            for entry in entries {
+                match entry {
+                    Ok(entry) => {
+                        let path = entry.path();
+                        if !path.is_dir() {
+                            continue;
+                        }
+
+                        // todo: parse about.xml
+
+                        if let Some(dir) = path.file_name().and_then(|name| name.to_str()) {
+                            self.mods.push(ModMeta {
+                                id: dir.to_string(),   // todo: get id from about.xml
+                                name: dir.to_string(), // todo: get name from about.xml
+                                path: path.clone(),
+                                source: source_fn(dir.to_string()),
+                            });
+                        }
+                    }
+                    Err(e) => {
+                        log::warn!("Error reading directory entry: {}", e);
+                    }
+                }
+            }
+        } else {
+            log::warn!("Could not read directory");
+        }
     }
 }
 
@@ -73,11 +86,31 @@ pub struct ModMeta {
     pub id: String,
     pub name: String,
     pub path: PathBuf,
-    pub mod_type: ModType,
+    pub source: Source,
+}
+
+impl ModMeta {
+    pub fn is_local(&self) -> bool {
+        self.source.is_local()
+    }
+
+    pub fn is_steam(&self) -> bool {
+        self.source.is_steam()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ModType {
+pub enum Source {
     Local,
-    Steam,
+    Steam { id: String },
+}
+
+impl Source {
+    pub fn is_local(&self) -> bool {
+        matches!(self, Source::Local)
+    }
+
+    pub fn is_steam(&self) -> bool {
+        matches!(self, Source::Steam { .. })
+    }
 }
