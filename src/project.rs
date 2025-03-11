@@ -1,3 +1,5 @@
+use std::{fs::read_dir, path::PathBuf};
+
 use gpui::{Context, Entity};
 
 use crate::settings::Settings;
@@ -22,22 +24,46 @@ impl Project {
     }
 
     fn load_mods(&mut self, cx: &mut Context<Self>) {
+        log::trace!("loading mods");
+
         self.settings.read_with(cx, |settings, _| {
-            if let Some(mods_dir) = settings.mods_dir() {
-                if let Ok(entries) = std::fs::read_dir(mods_dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.is_dir() {
-                            if let Some(id) = path.file_name().and_then(|name| name.to_str()) {
-                                self.mods.push(ModMeta {
-                                    id: id.to_string(),
-                                    name: id.to_string(),
-                                });
-                            }
+            log::trace!("loading local mods from {:?}", settings.local_mods_dir());
+            if let Ok(entries) = read_dir(settings.local_mods_dir()) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Some(id) = path.file_name().and_then(|name| name.to_str()) {
+                            self.mods.push(ModMeta {
+                                id: id.to_string(),
+                                name: id.to_string(),
+                                path: path.clone(),
+                                mod_type: ModType::Local,
+                            });
                         }
                     }
                 }
             }
+
+            log::trace!("loading steam mods from {:?}", settings.steam_mods_dir());
+            if let Ok(entries) = read_dir(settings.steam_mods_dir()) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.is_dir() {
+                        if let Some(id) = path.file_name().and_then(|name| name.to_str()) {
+                            self.mods.push(ModMeta {
+                                id: id.to_string(),
+                                name: id.to_string(),
+                                path: path.clone(),
+                                mod_type: ModType::Steam,
+                            });
+                        }
+                    }
+                }
+            }
+
+            self.mods.sort_by_key(|mod_meta| mod_meta.id.clone());
+
+            log::trace!("finished loading mods");
         });
     }
 }
@@ -46,4 +72,12 @@ impl Project {
 pub struct ModMeta {
     pub id: String,
     pub name: String,
+    pub path: PathBuf,
+    pub mod_type: ModType,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ModType {
+    Local,
+    Steam,
 }

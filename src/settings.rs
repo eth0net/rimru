@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use crate::game;
 
 pub struct Settings {
-    mods_dir: Option<PathBuf>,
+    local_mods_dir: PathBuf,
+    steam_mods_dir: PathBuf,
 }
 
 impl Settings {
@@ -11,15 +12,20 @@ impl Settings {
         Self::default()
     }
 
-    pub fn mods_dir(&self) -> &Option<PathBuf> {
-        &self.mods_dir
+    pub fn local_mods_dir(&self) -> &PathBuf {
+        &self.local_mods_dir
+    }
+
+    pub fn steam_mods_dir(&self) -> &PathBuf {
+        &self.steam_mods_dir
     }
 }
 
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            mods_dir: game::detect_game_dir(),
+            local_mods_dir: game::local_mods_dir(),
+            steam_mods_dir: game::steam_mods_dir(),
         }
     }
 }
