@@ -2,14 +2,21 @@ use std::{fs::read_dir, path::PathBuf};
 
 use gpui::{Context, Entity};
 
-use crate::{game::mods::ModMeta, settings::Settings};
+use crate::{
+    game::mods::{ModMeta, ModsConfig},
+    settings::Settings,
+};
 
 pub struct Project {
+    // rimru settings
     pub settings: Entity<Settings>,
-    // this is the list of active mod ids, sourced from the config or save file
-    pub active_mods: Vec<String>,
-    // this is the list of all mods installed, sourced from the mods directory
+    // mods configuration loaded from the game
+    pub mods_config: Option<ModsConfig>,
+    // list of all installed mods (local and steam)
     pub mods: Vec<ModMeta>,
+    // list of active mod ids, sourced from the config or save file
+    pub active_mods: Vec<String>,
+    // current selected mod in rimru
     pub selected_mod: Option<ModMeta>,
 }
 
@@ -17,12 +24,25 @@ impl Project {
     pub fn new(cx: &mut Context<Self>, settings: Entity<Settings>) -> Self {
         let mut project = Self {
             settings,
+            mods_config: None,
             active_mods: Vec::new(),
             mods: Vec::new(),
             selected_mod: None,
         };
+
+        match ModsConfig::load() {
+            Some(config) => {
+                project.active_mods = config.active_mods.clone();
+                project.mods_config = Some(config);
+            }
+            None => {
+                log::warn!("no mods config found");
+                project.active_mods = Vec::new();
+                project.mods_config = None;
+            }
+        }
+
         project.load_mods(cx);
-        // todo: detect active mods
         project
     }
 
@@ -83,17 +103,35 @@ impl Project {
     }
 
     pub fn active_mods(&self) -> Vec<ModMeta> {
-        self.mods
+        let mut active_mods: Vec<ModMeta> = self
+            .mods
             .iter()
-            .filter(|m| self.active_mods.contains(&m.id))
+            .filter(|m| self.active_mods.contains(&m.id.to_ascii_lowercase()))
             .cloned()
-            .collect()
+            .collect();
+
+        active_mods.sort_by(|a, b| {
+            let a_index = self
+                .active_mods
+                .iter()
+                .position(|id| id == &a.id.to_ascii_lowercase())
+                .unwrap_or(usize::MAX);
+            let b_index = self
+                .active_mods
+                .iter()
+                .position(|id| id == &b.id.to_ascii_lowercase())
+                .unwrap_or(usize::MAX);
+
+            a_index.cmp(&b_index)
+        });
+
+        active_mods
     }
 
     pub fn inactive_mods(&self) -> Vec<ModMeta> {
         self.mods
             .iter()
-            .filter(|m| !self.active_mods.contains(&m.id))
+            .filter(|m| !self.active_mods.contains(&m.id.to_ascii_lowercase()))
             .cloned()
             .collect()
     }

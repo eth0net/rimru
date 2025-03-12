@@ -5,6 +5,190 @@ use xml::reader::XmlEvent;
 use super::paths;
 
 #[derive(Debug, Clone, Default)]
+pub struct ModsConfig {
+    pub version: String,
+    pub active_mods: Vec<String>,
+    pub known_expansions: Vec<String>,
+}
+
+impl ModsConfig {
+    // todo: use result instead
+    pub fn load() -> Option<Self> {
+        let mut mods_config = ModsConfig::default();
+
+        let mods_config_path = paths::mods_config_file();
+        let mods_config_file = File::open(&mods_config_path);
+        if let Err(e) = mods_config_file {
+            log::error!("error opening mods config file: {}", e);
+            return None;
+        }
+        let mods_config_file = BufReader::new(mods_config_file.unwrap());
+        let parser_config = xml::ParserConfig::new()
+            .whitespace_to_characters(true)
+            .cdata_to_characters(true)
+            .ignore_comments(true)
+            .coalesce_characters(true);
+        let mut reader = parser_config.create_reader(mods_config_file);
+
+        loop {
+            match reader.next() {
+                Ok(XmlEvent::EndDocument) => {
+                    break;
+                }
+                Ok(XmlEvent::StartDocument { .. }) => {}
+                Ok(XmlEvent::StartElement { name, .. }) => {
+                    match name.local_name.to_ascii_lowercase().as_str() {
+                        "modsconfigdata" => loop {
+                            match reader.next() {
+                                Ok(XmlEvent::EndElement { name }) => {
+                                    if name.local_name.eq_ignore_ascii_case("modsconfigdata") {
+                                        break;
+                                    }
+                                }
+                                Ok(XmlEvent::StartElement { name, .. }) => {
+                                    match name.local_name.to_ascii_lowercase().as_str() {
+                                        "activemods" => loop {
+                                            match reader.next() {
+                                                Ok(XmlEvent::EndElement { name }) => {
+                                                    if name
+                                                        .local_name
+                                                        .eq_ignore_ascii_case("activeMods")
+                                                    {
+                                                        break;
+                                                    }
+                                                }
+                                                Ok(XmlEvent::StartElement { name, .. }) => loop {
+                                                    if !name.local_name.eq_ignore_ascii_case("li") {
+                                                        log::error!(
+                                                            "unexpected element in activeMods: {:?}",
+                                                            name
+                                                        );
+                                                        break;
+                                                    }
+                                                    match reader.next() {
+                                                        Ok(XmlEvent::EndElement { name }) => {
+                                                            if name
+                                                                .local_name
+                                                                .eq_ignore_ascii_case("li")
+                                                            {
+                                                                break;
+                                                            }
+                                                        }
+                                                        Ok(XmlEvent::Characters(author)) => {
+                                                            mods_config.active_mods.push(author);
+                                                        }
+                                                        Ok(event) => {
+                                                            log::warn!(
+                                                                "error parsing activeMod from {:?}: {}: {:?}",
+                                                                mods_config_path,
+                                                                "unexpected element",
+                                                                event,
+                                                            );
+                                                        }
+                                                        Err(err) => {
+                                                            log::error!(
+                                                                "error parsing activeMod from {:?}: {}",
+                                                                mods_config_path,
+                                                                err
+                                                            );
+                                                            break;
+                                                        }
+                                                    }
+                                                },
+                                                Ok(XmlEvent::Characters(_)) => {}
+                                                Ok(event) => {
+                                                    log::warn!(
+                                                        "error parsing authors from {:?}: {}: {:?}",
+                                                        mods_config_path,
+                                                        "unexpected element",
+                                                        event,
+                                                    );
+                                                }
+                                                Err(err) => {
+                                                    log::error!(
+                                                        "error parsing authors from {:?}: {}",
+                                                        mods_config_path,
+                                                        err
+                                                    );
+                                                    break;
+                                                }
+                                            }
+                                        },
+                                        unhandled => {
+                                            log::trace!(
+                                                "unhandled token {} in modsConfigData from {:?}",
+                                                name,
+                                                mods_config_path
+                                            );
+                                            loop {
+                                                match reader.next() {
+                                                    Ok(XmlEvent::EndElement { name }) => {
+                                                        if name
+                                                            .local_name
+                                                            .eq_ignore_ascii_case(unhandled)
+                                                        {
+                                                            break;
+                                                        }
+                                                    }
+                                                    Ok(_) => {
+                                                        // todo: read and process the elements
+                                                    }
+                                                    Err(err) => {
+                                                        log::error!(
+                                                            "error parsing modsConfigData from {:?}: {}",
+                                                            mods_config_path,
+                                                            err
+                                                        );
+                                                        break;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                Ok(XmlEvent::Characters(_)) => {}
+                                Ok(event) => {
+                                    log::warn!(
+                                        "parsing modMetaData from {:?}: {}: {:?}",
+                                        mods_config_path,
+                                        "unexpected element",
+                                        event,
+                                    );
+                                }
+                                Err(err) => {
+                                    log::error!(
+                                        "error parsing element from {:?}: {}",
+                                        mods_config_path,
+                                        err
+                                    );
+                                    break;
+                                }
+                            }
+                        },
+                        a => {
+                            log::trace!(
+                                "skipped parsing {} at root from {:?}",
+                                a,
+                                mods_config_path
+                            );
+                        }
+                    }
+                }
+                Ok(next) => {
+                    log::trace!("unexpected element {:?} from {:?}", next, mods_config_path);
+                }
+                Err(err) => {
+                    log::error!("error parsing element from {:?}: {}", mods_config_path, err);
+                    break;
+                }
+            }
+        }
+
+        Some(mods_config)
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct ModMeta {
     pub id: String,
     pub name: String,
@@ -37,12 +221,12 @@ impl ModMeta {
         let about_path = paths::mod_about_file(&path);
         let about_file = File::open(&about_path).ok()?;
         let about_file = BufReader::new(about_file);
-        let config = xml::ParserConfig::new()
+        let parser_config = xml::ParserConfig::new()
             .whitespace_to_characters(true)
             .cdata_to_characters(true)
             .ignore_comments(true)
             .coalesce_characters(true);
-        let mut reader = config.create_reader(about_file);
+        let mut reader = parser_config.create_reader(about_file);
 
         loop {
             match reader.next() {
@@ -602,13 +786,13 @@ impl ModMeta {
                                 },
                                 unhandled => {
                                     loop {
+                                        log::trace!(
+                                            "unhandled token {} in modMetaData from {:?}",
+                                            name,
+                                            about_path
+                                        );
                                         match reader.next() {
                                             Ok(XmlEvent::EndElement { name }) => {
-                                                log::trace!(
-                                                    "skipped parsing {} from {:?}",
-                                                    name,
-                                                    about_path
-                                                );
                                                 if name.local_name.eq_ignore_ascii_case(unhandled) {
                                                     break;
                                                 }
@@ -618,7 +802,7 @@ impl ModMeta {
                                             }
                                             Err(err) => {
                                                 log::error!(
-                                                    "error parsing incompatibleWithByVersion from {:?}: {}",
+                                                    "error parsing modMetaData from {:?}: {}",
                                                     about_path,
                                                     err
                                                 );
@@ -681,6 +865,7 @@ impl ModMeta {
     }
 }
 
+// todo: add dlc source
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Source {
     #[default]

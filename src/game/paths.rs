@@ -38,6 +38,10 @@ pub fn local_mods_dir() -> PathBuf {
     game_dir().join("Mods")
 }
 
+pub fn mods_config_file() -> PathBuf {
+    config_dir().join("ModsConfig.xml")
+}
+
 pub fn mod_about_file(mod_dir: &Path) -> PathBuf {
     mod_dir.join("About/About.xml")
 }
