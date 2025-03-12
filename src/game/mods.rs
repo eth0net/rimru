@@ -2,6 +2,8 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 
 use xml::reader::XmlEvent;
 
+use super::paths;
+
 #[derive(Debug, Clone, Default)]
 pub struct ModMeta {
     pub id: String,
@@ -32,7 +34,7 @@ impl ModMeta {
             ..Default::default()
         };
 
-        let about_path = path.join("About/About.xml");
+        let about_path = paths::mod_about_file(&path);
         let about_file = File::open(&about_path).ok()?;
         let about_file = BufReader::new(about_file);
         let config = xml::ParserConfig::new()
@@ -40,43 +42,42 @@ impl ModMeta {
             .cdata_to_characters(true)
             .ignore_comments(true)
             .coalesce_characters(true);
-        let reader = config.create_reader(about_file);
-        let mut reader = reader.into_iter();
+        let mut reader = config.create_reader(about_file);
 
         loop {
             match reader.next() {
-                Some(Ok(XmlEvent::EndDocument)) => {
+                Ok(XmlEvent::EndDocument) => {
                     break;
                 }
-                Some(Ok(XmlEvent::StartDocument { .. })) => {}
-                Some(Ok(XmlEvent::StartElement { name, .. })) => match name
+                Ok(XmlEvent::StartDocument { .. }) => {}
+                Ok(XmlEvent::StartElement { name, .. }) => match name
                     .local_name
                     .to_ascii_lowercase()
                     .as_str()
                 {
                     "modmetadata" => loop {
                         match reader.next() {
-                            Some(Ok(XmlEvent::EndElement { name })) => {
+                            Ok(XmlEvent::EndElement { name }) => {
                                 if name.local_name.eq_ignore_ascii_case("modmetadata") {
                                     break;
                                 }
                             }
-                            Some(Ok(XmlEvent::StartElement { name, .. })) => match name
+                            Ok(XmlEvent::StartElement { name, .. }) => match name
                                 .local_name
                                 .to_ascii_lowercase()
                                 .as_str()
                             {
                                 "packageid" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("packageId") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::Characters(chars))) => {
+                                        Ok(XmlEvent::Characters(chars)) => {
                                             mod_meta.id = chars;
                                         }
-                                        Some(Ok(event)) => {
+                                        Ok(event) => {
                                             log::warn!(
                                                 "error parsing packageId from {:?}: {}: {:?}",
                                                 about_path,
@@ -84,7 +85,7 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing packageId from {:?}: {}: {:?}",
                                                 about_path,
@@ -93,27 +94,19 @@ impl ModMeta {
                                             );
                                             break;
                                         }
-                                        None => {
-                                            log::error!(
-                                                "error parsing packageId from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
-                                            );
-                                            break;
-                                        }
                                     }
                                 },
                                 "name" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("name") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::Characters(chars))) => {
+                                        Ok(XmlEvent::Characters(chars)) => {
                                             mod_meta.name += chars.as_str();
                                         }
-                                        Some(Ok(event)) => {
+                                        Ok(event) => {
                                             log::warn!(
                                                 "error parsing name from {:?}: {}: {:?}",
                                                 about_path,
@@ -121,19 +114,11 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing name from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing name from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -141,17 +126,17 @@ impl ModMeta {
                                 },
                                 "author" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("author") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::Characters(chars))) => {
+                                        Ok(XmlEvent::Characters(chars)) => {
                                             for author in chars.split(",") {
                                                 mod_meta.authors.push(author.trim().to_string());
                                             }
                                         }
-                                        Some(Ok(event)) => {
+                                        Ok(event) => {
                                             log::warn!(
                                                 "error parsing author from {:?}: {}: {:?}",
                                                 about_path,
@@ -159,7 +144,7 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing author from {:?}: {}",
                                                 about_path,
@@ -167,24 +152,16 @@ impl ModMeta {
                                             );
                                             break;
                                         }
-                                        None => {
-                                            log::error!(
-                                                "error parsing author from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
-                                            );
-                                            break;
-                                        }
                                     }
                                 },
                                 "authors" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("authors") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::StartElement { name, .. })) => loop {
+                                        Ok(XmlEvent::StartElement { name, .. }) => loop {
                                             if !name.local_name.eq_ignore_ascii_case("li") {
                                                 log::error!(
                                                     "unexpected element in authors: {:?}",
@@ -193,15 +170,15 @@ impl ModMeta {
                                                 break;
                                             }
                                             match reader.next() {
-                                                Some(Ok(XmlEvent::EndElement { name })) => {
+                                                Ok(XmlEvent::EndElement { name }) => {
                                                     if name.local_name.eq_ignore_ascii_case("li") {
                                                         break;
                                                     }
                                                 }
-                                                Some(Ok(XmlEvent::Characters(author))) => {
+                                                Ok(XmlEvent::Characters(author)) => {
                                                     mod_meta.authors.push(author);
                                                 }
-                                                Some(Ok(event)) => {
+                                                Ok(event) => {
                                                     log::warn!(
                                                         "error parsing author from {:?}: {}: {:?}",
                                                         about_path,
@@ -209,7 +186,7 @@ impl ModMeta {
                                                         event,
                                                     );
                                                 }
-                                                Some(Err(err)) => {
+                                                Err(err) => {
                                                     log::error!(
                                                         "error parsing author from {:?}: {}",
                                                         about_path,
@@ -217,18 +194,10 @@ impl ModMeta {
                                                     );
                                                     break;
                                                 }
-                                                None => {
-                                                    log::error!(
-                                                        "error parsing author from {:?}: {}",
-                                                        about_path,
-                                                        "unexpected end of file"
-                                                    );
-                                                    break;
-                                                }
                                             }
                                         },
-                                        Some(Ok(XmlEvent::Characters(_))) => {}
-                                        Some(Ok(event)) => {
+                                        Ok(XmlEvent::Characters(_)) => {}
+                                        Ok(event) => {
                                             log::warn!(
                                                 "error parsing authors from {:?}: {}: {:?}",
                                                 about_path,
@@ -236,19 +205,11 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing authors from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing authors from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -256,15 +217,15 @@ impl ModMeta {
                                 },
                                 "description" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("description") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::Characters(description))) => {
+                                        Ok(XmlEvent::Characters(description)) => {
                                             mod_meta.description += description.as_str();
                                         }
-                                        Some(Ok(event)) => {
+                                        Ok(event) => {
                                             log::warn!(
                                                 "error parsing description from {:?}: {}: {:?}",
                                                 about_path,
@@ -272,19 +233,11 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing description from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing description from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -292,7 +245,7 @@ impl ModMeta {
                                 },
                                 "supportedversions" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("supportedVersions")
@@ -300,10 +253,10 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing supportedVersions from {:?}: {}",
                                                 about_path,
@@ -311,27 +264,19 @@ impl ModMeta {
                                             );
                                             break;
                                         }
-                                        None => {
-                                            log::error!(
-                                                "error parsing supportedVersions from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
-                                            );
-                                            break;
-                                        }
                                     }
                                 },
                                 "modversion" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("modVersion") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::Characters(_))) => {
+                                        Ok(XmlEvent::Characters(_)) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Ok(event)) => {
+                                        Ok(event) => {
                                             log::error!(
                                                 "error parsing modVersion from {:?}: {}: {:?}",
                                                 about_path,
@@ -339,7 +284,7 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing modVersion from {:?}: {}: {:?}",
                                                 about_path,
@@ -348,27 +293,19 @@ impl ModMeta {
                                             );
                                             break;
                                         }
-                                        None => {
-                                            log::error!(
-                                                "error parsing modVersion from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file",
-                                            );
-                                            break;
-                                        }
                                     }
                                 },
                                 "modiconpath" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("modIconPath") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::Characters(_))) => {
+                                        Ok(XmlEvent::Characters(_)) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Ok(event)) => {
+                                        Ok(event) => {
                                             log::error!(
                                                 "error parsing modIconPath from {:?}: {}: {:?}",
                                                 about_path,
@@ -376,20 +313,12 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing modIconPath from {:?}: {}: {:?}",
                                                 about_path,
                                                 "unexpected error",
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing modIconPath from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file",
                                             );
                                             break;
                                         }
@@ -397,15 +326,15 @@ impl ModMeta {
                                 },
                                 "url" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("url") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(XmlEvent::Characters(_))) => {
+                                        Ok(XmlEvent::Characters(_)) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Ok(event)) => {
+                                        Ok(event) => {
                                             log::error!(
                                                 "error parsing url from {:?}: {}: {:?}",
                                                 about_path,
@@ -413,7 +342,7 @@ impl ModMeta {
                                                 event,
                                             );
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing url from {:?}: {}: {:?}",
                                                 about_path,
@@ -422,19 +351,11 @@ impl ModMeta {
                                             );
                                             break;
                                         }
-                                        None => {
-                                            log::error!(
-                                                "error parsing url from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file",
-                                            );
-                                            break;
-                                        }
                                     }
                                 },
                                 "descriptionsbyversion" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("descriptionsByVersion")
@@ -442,22 +363,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing descriptionsByVersion from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing descriptionsByVersion from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -465,7 +378,7 @@ impl ModMeta {
                                 },
                                 "moddependencies" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("modDependencies")
@@ -473,22 +386,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing modDependencies from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing modDependencies from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -496,7 +401,7 @@ impl ModMeta {
                                 },
                                 "moddependenciesbyversion" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("modDependenciesByVersion")
@@ -504,22 +409,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing modDependenciesByVersion from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing modDependenciesByVersion from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -527,27 +424,19 @@ impl ModMeta {
                                 },
                                 "loadbefore" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("loadBefore") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing loadBefore from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing loadBefore from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -555,7 +444,7 @@ impl ModMeta {
                                 },
                                 "loadbeforebyversion" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("loadBeforeByVersion")
@@ -563,22 +452,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing loadBeforeByVersion from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing loadBeforeByVersion from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -586,7 +467,7 @@ impl ModMeta {
                                 },
                                 "forceloadbefore" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("forceLoadBefore")
@@ -594,22 +475,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing forceLoadBefore from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing forceLoadBefore from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -617,27 +490,19 @@ impl ModMeta {
                                 },
                                 "loadafter" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name.local_name.eq_ignore_ascii_case("loadAfter") {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing loadAfter from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing loadAfter from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -645,7 +510,7 @@ impl ModMeta {
                                 },
                                 "loadafterbyversion" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("loadAfterByVersion")
@@ -653,22 +518,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing loadAfterByVersion from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing loadAfterByVersion from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -676,7 +533,7 @@ impl ModMeta {
                                 },
                                 "forceloadafter" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("forceloadafter")
@@ -684,22 +541,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing forceLoadAfter from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing forceLoadAfter from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -707,7 +556,7 @@ impl ModMeta {
                                 },
                                 "incompatiblewith" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("incompatibleWith")
@@ -715,22 +564,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing incompatibleWith from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing incompatibleWith from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -738,7 +579,7 @@ impl ModMeta {
                                 },
                                 "incompatiblewithbyversion" => loop {
                                     match reader.next() {
-                                        Some(Ok(XmlEvent::EndElement { name })) => {
+                                        Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
                                                 .eq_ignore_ascii_case("incompatibleWithByVersion")
@@ -746,22 +587,14 @@ impl ModMeta {
                                                 break;
                                             }
                                         }
-                                        Some(Ok(_)) => {
+                                        Ok(_) => {
                                             // todo: read and process the elements
                                         }
-                                        Some(Err(err)) => {
+                                        Err(err) => {
                                             log::error!(
                                                 "error parsing incompatibleWithByVersion from {:?}: {}",
                                                 about_path,
                                                 err
-                                            );
-                                            break;
-                                        }
-                                        None => {
-                                            log::error!(
-                                                "error parsing incompatibleWithByVersion from {:?}: {}",
-                                                about_path,
-                                                "unexpected end of file"
                                             );
                                             break;
                                         }
@@ -770,7 +603,7 @@ impl ModMeta {
                                 unhandled => {
                                     loop {
                                         match reader.next() {
-                                            Some(Ok(XmlEvent::EndElement { name })) => {
+                                            Ok(XmlEvent::EndElement { name }) => {
                                                 log::trace!(
                                                     "skipped parsing {} from {:?}",
                                                     name,
@@ -780,10 +613,10 @@ impl ModMeta {
                                                     break;
                                                 }
                                             }
-                                            Some(Ok(_)) => {
+                                            Ok(_) => {
                                                 // todo: read and process the elements
                                             }
-                                            Some(Err(err)) => {
+                                            Err(err) => {
                                                 log::error!(
                                                     "error parsing incompatibleWithByVersion from {:?}: {}",
                                                     about_path,
@@ -791,20 +624,12 @@ impl ModMeta {
                                                 );
                                                 break;
                                             }
-                                            None => {
-                                                log::error!(
-                                                    "error parsing incompatibleWithByVersion from {:?}: {}",
-                                                    about_path,
-                                                    "unexpected end of file"
-                                                );
-                                                break;
-                                            }
                                         }
                                     }
                                 }
                             },
-                            Some(Ok(XmlEvent::Characters(_))) => {}
-                            Some(Ok(event)) => {
+                            Ok(XmlEvent::Characters(_)) => {}
+                            Ok(event) => {
                                 log::warn!(
                                     "parsing modMetaData from {:?}: {}: {:?}",
                                     about_path,
@@ -812,15 +637,8 @@ impl ModMeta {
                                     event,
                                 );
                             }
-                            Some(Err(err)) => {
+                            Err(err) => {
                                 log::error!("error parsing element from {:?}: {}", about_path, err);
-                                break;
-                            }
-                            None => {
-                                log::error!(
-                                    "error parsing element from {:?}: unexpected end of file",
-                                    about_path
-                                );
                                 break;
                             }
                         }
@@ -829,18 +647,11 @@ impl ModMeta {
                         log::trace!("skipped parsing {} from {:?}", a, about_path);
                     }
                 },
-                Some(Ok(next)) => {
+                Ok(next) => {
                     log::trace!("unexpected element {:?} from {:?}", next, about_path);
                 }
-                Some(Err(err)) => {
+                Err(err) => {
                     log::error!("error parsing element from {:?}: {}", about_path, err);
-                    break;
-                }
-                None => {
-                    log::error!(
-                        "error parsing element from {:?}: unexpected end of file",
-                        about_path
-                    );
                     break;
                 }
             }
@@ -860,6 +671,7 @@ impl ModMeta {
         Self::new(path).and_then(|mut m| {
             let dir_name = m.path.file_name().and_then(|name| name.to_str())?;
 
+            // todo: use steamAppId from About.xml if
             m.source = Source::Steam {
                 id: dir_name.to_string(),
             };

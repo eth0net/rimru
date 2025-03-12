@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "macos")]
 pub(crate) const GAME_DIR: &str =
@@ -36,4 +36,8 @@ pub fn steam_mods_dir() -> PathBuf {
 
 pub fn local_mods_dir() -> PathBuf {
     game_dir().join("Mods")
+}
+
+pub fn mod_about_file(mod_dir: &Path) -> PathBuf {
+    mod_dir.join("About/About.xml")
 }
