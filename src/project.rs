@@ -41,7 +41,7 @@ impl Project {
         self.load_mods_from_dir(&steam_mods_dir, Mod::new_steam);
 
         log::trace!("sorting loaded mods");
-        self.mods.sort_by_key(|mod_meta| mod_meta.id.clone());
+        self.mods.sort_by_key(|mod_meta| mod_meta.name.clone());
 
         log::debug!("finished loading mods");
     }

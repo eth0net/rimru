@@ -37,7 +37,13 @@ impl Render for ModDetails {
                     .py_1()
                     .when(self.mod_meta.is_some(), |this| {
                         let mod_meta = self.mod_meta.as_ref().unwrap();
-                        this.child(mod_meta.name.clone()).child(mod_meta.id.clone())
+                        this.child(format!(
+                            "{} ({})",
+                            mod_meta.name.clone(),
+                            mod_meta.id.clone()
+                        ))
+                        .child(format!("Authors: {}", mod_meta.authors.join(", ")))
+                        .child(mod_meta.description.clone())
                     }),
             )
     }
