@@ -1,25 +1,42 @@
+use std::fmt::Display;
+
 use gpui::{
-    Context, IntoElement, MouseButton, SharedString, Window, div, prelude::*, rgb, rgba,
-    uniform_list,
+    Context, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, prelude::*,
+    rgb, uniform_list,
 };
 
-use crate::{game::mods::Mod, theme::colours};
+use crate::{project::Project, theme::colours};
 
 pub struct ModList {
-    name: SharedString,
-    mods: Vec<Mod>,
+    project: Entity<Project>,
+    list_type: ModListType,
+    // mods: Vec<Mod>, // todo: cache list
 }
 
 impl ModList {
-    pub fn new(name: SharedString, mods: Vec<Mod>) -> Self {
-        Self { name, mods }
+    pub fn new_active(project: Entity<Project>) -> Self {
+        Self::new(ModListType::Active, project)
+    }
+
+    pub fn new_inactive(project: Entity<Project>) -> Self {
+        Self::new(ModListType::Inactive, project)
+    }
+
+    pub fn new(list_type: ModListType, project: Entity<Project>) -> Self {
+        Self { project, list_type }
     }
 }
 
 impl Render for ModList {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let project = self.project.clone();
+        let list_name = SharedString::from(self.list_type.to_string());
+        let mods = project.read_with(cx, |project, _| match self.list_type {
+            ModListType::Active => project.active_mods(),
+            ModListType::Inactive => project.inactive_mods(),
+        });
+
         div()
-            // .id("mod-list")
             .flex()
             .flex_col()
             .h_full()
@@ -34,12 +51,12 @@ impl Render for ModList {
                     .items_center()
                     .px_2()
                     .py_1()
-                    .child(self.name.clone()),
+                    .child(self.list_type.to_string()),
             )
             .child(
-                uniform_list(cx.entity().clone(), self.name.clone(), self.mods.len(), {
-                    let list_name = self.name.clone();
-                    let mods = self.mods.clone();
+                uniform_list(cx.entity().clone(), list_name.clone(), mods.len(), {
+                    let mods = mods.clone();
+                    let list_name = list_name.clone();
                     move |_this, range, _window, _cx| {
                         let mut items = Vec::new();
                         for ix in range {
@@ -49,22 +66,36 @@ impl Render for ModList {
                                 div()
                                     .id((list_name.clone(), ix))
                                     .cursor_pointer()
-                                    .bg(rgba(0x77777777))
                                     .px_2()
+                                    .text_overflow(TextOverflow::Ellipsis("..."))
                                     .on_click({
                                         let mod_meta = mod_meta.clone();
-                                        move |event, _window, _cx| {
-                                            // log::debug!("click {mod_meta:?} {event:?}");
+                                        let project = project.clone();
+                                        move |event, _window, cx| {
                                             match event.down.button {
                                                 MouseButton::Left => {
                                                     match event.down.click_count {
                                                         1 => {
                                                             // Select
                                                             log::debug!("select {mod_meta:?}");
+                                                            project.update(cx, {
+                                                                let mod_meta = mod_meta.clone();
+                                                                move |project, _| {
+                                                                    project.select_mod(&mod_meta);
+                                                                }
+                                                            });
                                                         }
                                                         2 => {
                                                             // Activate/deactivate
                                                             log::debug!("toggle {mod_meta:?}");
+                                                            project.update(cx, {
+                                                                let mod_id = mod_meta.id.clone();
+                                                                move |project, _| {
+                                                                    project.toggle_mod(
+                                                                        mod_id.clone().as_str(),
+                                                                    );
+                                                                }
+                                                            });
                                                         }
                                                         _ => {}
                                                     }
@@ -73,7 +104,9 @@ impl Render for ModList {
                                                     // Open context menu
                                                     log::debug!("context menu {mod_meta:?}");
                                                 }
-                                                _ => log::debug!("unhandled click {mod_meta:?}"),
+                                                _ => {
+                                                    log::debug!("unhandled click {mod_meta:?}")
+                                                }
                                             }
                                         }
                                     })
@@ -85,5 +118,20 @@ impl Render for ModList {
                 })
                 .flex_grow(),
             )
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ModListType {
+    Active,
+    Inactive,
+}
+
+impl Display for ModListType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ModListType::Active => write!(f, "Active"),
+            ModListType::Inactive => write!(f, "Inactive"),
+        }
     }
 }

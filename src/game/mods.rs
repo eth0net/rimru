@@ -3,7 +3,7 @@ use std::{fs::File, io::BufReader, path::PathBuf};
 use xml::reader::XmlEvent;
 
 #[derive(Debug, Clone, Default)]
-pub struct Mod {
+pub struct ModMeta {
     pub id: String,
     pub name: String,
     pub authors: Vec<String>,
@@ -12,7 +12,7 @@ pub struct Mod {
     pub source: Source,
 }
 
-impl Mod {
+impl ModMeta {
     pub fn is_local(&self) -> bool {
         self.source.is_local()
     }
@@ -27,7 +27,7 @@ impl Mod {
             return None;
         }
 
-        let mut mod_meta = Mod {
+        let mut mod_meta = ModMeta {
             path: path.clone(),
             ..Default::default()
         };

@@ -1,19 +1,20 @@
-use gpui::{Context, IntoElement, Window, div, prelude::*};
+use gpui::{Context, Entity, IntoElement, Window, div, prelude::*};
 
-use crate::game::mods::Mod;
+use crate::project::Project;
 
 pub struct ModDetails {
-    mod_meta: Option<Mod>,
+    project: Entity<Project>,
 }
 
 impl ModDetails {
-    pub fn new(mod_meta: Option<Mod>) -> Self {
-        Self { mod_meta }
+    pub fn new(project: Entity<Project>) -> Self {
+        Self { project }
     }
 }
 
 impl Render for ModDetails {
-    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let selected = self.project.read(cx).selected_mod();
         div()
             .flex()
             .flex_col()
@@ -35,8 +36,9 @@ impl Render for ModDetails {
                     .flex_col()
                     .px_2()
                     .py_1()
-                    .when(self.mod_meta.is_some(), |this| {
-                        let mod_meta = self.mod_meta.as_ref().unwrap();
+                    .overflow_x_hidden()
+                    .when(selected.is_some(), |this| {
+                        let mod_meta = selected.unwrap();
                         this.child(format!(
                             "{} ({})",
                             mod_meta.name.clone(),

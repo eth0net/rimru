@@ -17,34 +17,11 @@ pub struct MainPane {
 
 impl MainPane {
     pub fn new(cx: &mut Context<Self>, project: Entity<Project>) -> Self {
-        let (active, inactive) = project.read_with(cx, |project, _| {
-            let active_mods: Vec<_> = project
-                .mods
-                .iter()
-                .filter(|m| project.active_mods.contains(&m.id))
-                .cloned()
-                .collect();
-
-            let inactive_mods: Vec<_> = project
-                .mods
-                .iter()
-                .filter(|m| !project.active_mods.contains(&m.id))
-                .cloned()
-                .collect();
-
-            (active_mods, inactive_mods)
-        });
-
-        let selected = active
-            .first()
-            .cloned()
-            .or_else(|| inactive.first().cloned());
-
         MainPane {
             // project: project.clone(),
-            active_list: cx.new(|_| ModList::new("Active".into(), active)),
-            inactive_list: cx.new(|_| ModList::new("Inactive".into(), inactive)),
-            details_pane: cx.new(|_| ModDetails::new(selected)),
+            active_list: cx.new(|_| ModList::new_active(project.clone())),
+            inactive_list: cx.new(|_| ModList::new_inactive(project.clone())),
+            details_pane: cx.new(|_| ModDetails::new(project.clone())),
         }
     }
 }
