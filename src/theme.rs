@@ -9,6 +9,7 @@ pub mod colours {
     pub const BACKGROUND: u32 = 0x0d1117;
     pub const BORDER: u32 = 0x30363d;
     pub const TEXT: u32 = 0xffffff;
+    pub const TEXT_SECONDARY: u32 = 0xcccccc;
     pub const TITLE_BAR_BACKGROUND: u32 = 0x0d1117;
     // pub const TITLE_BAR_INACTIVE_BACKGROUND: u32 = 0x1e2228;
 }
