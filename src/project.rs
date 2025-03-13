@@ -125,12 +125,12 @@ impl Project {
             let a_index = self
                 .active_mods
                 .iter()
-                .position(|id| id == &a.id.to_ascii_lowercase())
+                .position(|id| id.eq_ignore_ascii_case(&a.id))
                 .unwrap_or(usize::MAX);
             let b_index = self
                 .active_mods
                 .iter()
-                .position(|id| id == &b.id.to_ascii_lowercase())
+                .position(|id| id.eq_ignore_ascii_case(&b.id))
                 .unwrap_or(usize::MAX);
 
             match a_index.cmp(&b_index) {
@@ -169,7 +169,7 @@ impl Project {
                 log::info!("deactivated mod: {}", mod_meta.id);
             }
             None => {
-                self.active_mods.push(mod_meta.id.to_string());
+                self.active_mods.push(mod_meta.id.to_ascii_lowercase());
                 log::info!("activated mod: {}", mod_meta.id);
             }
         }
