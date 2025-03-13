@@ -53,7 +53,12 @@ impl Project {
         self.load_steam_mods(cx);
 
         log::trace!("sorting loaded mods");
-        self.mods.sort_by_key(|mod_meta| mod_meta.name.clone());
+        {
+            self.mods.sort_by(|a, b| match a.name.cmp(&b.name) {
+                std::cmp::Ordering::Equal => a.id.cmp(&b.id),
+                other => other,
+            });
+        }
 
         self.selected_mod = self.mods.first().cloned();
 
@@ -128,7 +133,10 @@ impl Project {
                 .position(|id| id == &b.id.to_ascii_lowercase())
                 .unwrap_or(usize::MAX);
 
-            a_index.cmp(&b_index)
+            match a_index.cmp(&b_index) {
+                std::cmp::Ordering::Equal => a.id.cmp(&b.id),
+                other => other,
+            }
         });
 
         active_mods
