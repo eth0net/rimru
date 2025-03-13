@@ -117,7 +117,11 @@ impl Project {
         let mut active_mods: Vec<ModMeta> = self
             .mods
             .iter()
-            .filter(|m| self.active_mods.contains(&m.id.to_ascii_lowercase()))
+            .filter(|m| {
+                let mod_id = m.id.to_ascii_lowercase();
+                self.active_mods.contains(&mod_id)
+                    || (m.source.is_steam() && self.active_mods.contains(&(mod_id + "_steam")))
+            })
             .cloned()
             .collect();
 
