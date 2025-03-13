@@ -36,6 +36,7 @@ impl ModMetaData {
             .coalesce_characters(true);
         let mut reader = parser_config.create_reader(about_file);
 
+        // todo: remove loops over events now we coalesce characters
         loop {
             match reader.next() {
                 Ok(XmlEvent::EndDocument) => {
@@ -59,63 +60,6 @@ impl ModMetaData {
                                 .to_ascii_lowercase()
                                 .as_str()
                             {
-                                "packageid" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name.local_name.eq_ignore_ascii_case("packageId") {
-                                                break;
-                                            }
-                                        }
-                                        Ok(XmlEvent::Characters(chars)) => {
-                                            mod_meta.id = chars;
-                                        }
-                                        Ok(event) => {
-                                            log::warn!(
-                                                "error parsing packageId from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected element",
-                                                event,
-                                            );
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing packageId from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected error",
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "name" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name.local_name.eq_ignore_ascii_case("name") {
-                                                break;
-                                            }
-                                        }
-                                        Ok(XmlEvent::Characters(chars)) => {
-                                            mod_meta.name += chars.as_str();
-                                        }
-                                        Ok(event) => {
-                                            log::warn!(
-                                                "error parsing name from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected element",
-                                                event,
-                                            );
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing name from {:?}: {}",
-                                                about_path,
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
                                 "author" => loop {
                                     match reader.next() {
                                         Ok(XmlEvent::EndElement { name }) => {
@@ -235,116 +179,6 @@ impl ModMetaData {
                                         }
                                     }
                                 },
-                                "supportedversions" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name
-                                                .local_name
-                                                .eq_ignore_ascii_case("supportedVersions")
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Ok(_) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing supportedVersions from {:?}: {}",
-                                                about_path,
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "modversion" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name.local_name.eq_ignore_ascii_case("modVersion") {
-                                                break;
-                                            }
-                                        }
-                                        Ok(XmlEvent::Characters(_)) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Ok(event) => {
-                                            log::error!(
-                                                "error parsing modVersion from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected element",
-                                                event,
-                                            );
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing modVersion from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected error",
-                                                err,
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "modiconpath" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name.local_name.eq_ignore_ascii_case("modIconPath") {
-                                                break;
-                                            }
-                                        }
-                                        Ok(XmlEvent::Characters(_)) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Ok(event) => {
-                                            log::error!(
-                                                "error parsing modIconPath from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected element",
-                                                event,
-                                            );
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing modIconPath from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected error",
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "url" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name.local_name.eq_ignore_ascii_case("url") {
-                                                break;
-                                            }
-                                        }
-                                        Ok(XmlEvent::Characters(_)) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Ok(event) => {
-                                            log::error!(
-                                                "error parsing url from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected element",
-                                                event,
-                                            );
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing url from {:?}: {}: {:?}",
-                                                about_path,
-                                                "unexpected error",
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
                                 "descriptionsbyversion" => loop {
                                     match reader.next() {
                                         Ok(XmlEvent::EndElement { name }) => {
@@ -361,6 +195,184 @@ impl ModMetaData {
                                         Err(err) => {
                                             log::error!(
                                                 "error parsing descriptionsByVersion from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "forceloadafter" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name
+                                                .local_name
+                                                .eq_ignore_ascii_case("forceloadafter")
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing forceLoadAfter from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "forceloadbefore" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name
+                                                .local_name
+                                                .eq_ignore_ascii_case("forceLoadBefore")
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing forceLoadBefore from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "incompatiblewith" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name
+                                                .local_name
+                                                .eq_ignore_ascii_case("incompatibleWith")
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing incompatibleWith from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "incompatiblewithbyversion" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name
+                                                .local_name
+                                                .eq_ignore_ascii_case("incompatibleWithByVersion")
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing incompatibleWithByVersion from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "loadafter" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name.local_name.eq_ignore_ascii_case("loadAfter") {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing loadAfter from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "loadafterbyversion" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name
+                                                .local_name
+                                                .eq_ignore_ascii_case("loadAfterByVersion")
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing loadAfterByVersion from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "loadbefore" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name.local_name.eq_ignore_ascii_case("loadBefore") {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing loadBefore from {:?}: {}",
+                                                about_path,
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "loadbeforebyversion" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name
+                                                .local_name
+                                                .eq_ignore_ascii_case("loadBeforeByVersion")
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        Ok(_) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing loadBeforeByVersion from {:?}: {}",
                                                 about_path,
                                                 err
                                             );
@@ -414,19 +426,85 @@ impl ModMetaData {
                                         }
                                     }
                                 },
-                                "loadbefore" => loop {
+                                "modiconpath" => loop {
                                     match reader.next() {
                                         Ok(XmlEvent::EndElement { name }) => {
-                                            if name.local_name.eq_ignore_ascii_case("loadBefore") {
+                                            if name.local_name.eq_ignore_ascii_case("modIconPath") {
                                                 break;
                                             }
                                         }
-                                        Ok(_) => {
+                                        Ok(XmlEvent::Characters(_)) => {
                                             // todo: read and process the elements
+                                        }
+                                        Ok(event) => {
+                                            log::error!(
+                                                "error parsing modIconPath from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected element",
+                                                event,
+                                            );
                                         }
                                         Err(err) => {
                                             log::error!(
-                                                "error parsing loadBefore from {:?}: {}",
+                                                "error parsing modIconPath from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected error",
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "modversion" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name.local_name.eq_ignore_ascii_case("modVersion") {
+                                                break;
+                                            }
+                                        }
+                                        Ok(XmlEvent::Characters(_)) => {
+                                            // todo: read and process the elements
+                                        }
+                                        Ok(event) => {
+                                            log::error!(
+                                                "error parsing modVersion from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected element",
+                                                event,
+                                            );
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing modVersion from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected error",
+                                                err,
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "name" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name.local_name.eq_ignore_ascii_case("name") {
+                                                break;
+                                            }
+                                        }
+                                        Ok(XmlEvent::Characters(chars)) => {
+                                            mod_meta.name += chars.as_str();
+                                        }
+                                        Ok(event) => {
+                                            log::warn!(
+                                                "error parsing name from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected element",
+                                                event,
+                                            );
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing name from {:?}: {}",
                                                 about_path,
                                                 err
                                             );
@@ -434,12 +512,41 @@ impl ModMetaData {
                                         }
                                     }
                                 },
-                                "loadbeforebyversion" => loop {
+                                "packageid" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name.local_name.eq_ignore_ascii_case("packageId") {
+                                                break;
+                                            }
+                                        }
+                                        Ok(XmlEvent::Characters(chars)) => {
+                                            mod_meta.id = chars;
+                                        }
+                                        Ok(event) => {
+                                            log::warn!(
+                                                "error parsing packageId from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected element",
+                                                event,
+                                            );
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing packageId from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected error",
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
+                                "supportedversions" => loop {
                                     match reader.next() {
                                         Ok(XmlEvent::EndElement { name }) => {
                                             if name
                                                 .local_name
-                                                .eq_ignore_ascii_case("loadBeforeByVersion")
+                                                .eq_ignore_ascii_case("supportedVersions")
                                             {
                                                 break;
                                             }
@@ -449,7 +556,7 @@ impl ModMetaData {
                                         }
                                         Err(err) => {
                                             log::error!(
-                                                "error parsing loadBeforeByVersion from {:?}: {}",
+                                                "error parsing supportedVersions from {:?}: {}",
                                                 about_path,
                                                 err
                                             );
@@ -457,135 +564,29 @@ impl ModMetaData {
                                         }
                                     }
                                 },
-                                "forceloadbefore" => loop {
+                                "url" => loop {
                                     match reader.next() {
                                         Ok(XmlEvent::EndElement { name }) => {
-                                            if name
-                                                .local_name
-                                                .eq_ignore_ascii_case("forceLoadBefore")
-                                            {
+                                            if name.local_name.eq_ignore_ascii_case("url") {
                                                 break;
                                             }
                                         }
-                                        Ok(_) => {
+                                        Ok(XmlEvent::Characters(_)) => {
                                             // todo: read and process the elements
                                         }
-                                        Err(err) => {
+                                        Ok(event) => {
                                             log::error!(
-                                                "error parsing forceLoadBefore from {:?}: {}",
+                                                "error parsing url from {:?}: {}: {:?}",
                                                 about_path,
-                                                err
+                                                "unexpected element",
+                                                event,
                                             );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "loadafter" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name.local_name.eq_ignore_ascii_case("loadAfter") {
-                                                break;
-                                            }
-                                        }
-                                        Ok(_) => {
-                                            // todo: read and process the elements
                                         }
                                         Err(err) => {
                                             log::error!(
-                                                "error parsing loadAfter from {:?}: {}",
+                                                "error parsing url from {:?}: {}: {:?}",
                                                 about_path,
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "loadafterbyversion" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name
-                                                .local_name
-                                                .eq_ignore_ascii_case("loadAfterByVersion")
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Ok(_) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing loadAfterByVersion from {:?}: {}",
-                                                about_path,
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "forceloadafter" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name
-                                                .local_name
-                                                .eq_ignore_ascii_case("forceloadafter")
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Ok(_) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing forceLoadAfter from {:?}: {}",
-                                                about_path,
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "incompatiblewith" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name
-                                                .local_name
-                                                .eq_ignore_ascii_case("incompatibleWith")
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Ok(_) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing incompatibleWith from {:?}: {}",
-                                                about_path,
-                                                err
-                                            );
-                                            break;
-                                        }
-                                    }
-                                },
-                                "incompatiblewithbyversion" => loop {
-                                    match reader.next() {
-                                        Ok(XmlEvent::EndElement { name }) => {
-                                            if name
-                                                .local_name
-                                                .eq_ignore_ascii_case("incompatibleWithByVersion")
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        Ok(_) => {
-                                            // todo: read and process the elements
-                                        }
-                                        Err(err) => {
-                                            log::error!(
-                                                "error parsing incompatibleWithByVersion from {:?}: {}",
-                                                about_path,
+                                                "unexpected error",
                                                 err
                                             );
                                             break;
