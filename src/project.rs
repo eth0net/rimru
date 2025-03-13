@@ -3,7 +3,10 @@ use std::{fs::read_dir, path::PathBuf};
 use gpui::{Context, Entity};
 
 use crate::{
-    game::mods::{ModMeta, ModsConfig, Source},
+    game::mods::{
+        config::ModsConfigData,
+        meta::{ModMetaData, Source},
+    },
     settings::Settings,
 };
 
@@ -11,13 +14,13 @@ pub struct Project {
     // rimru settings
     pub settings: Entity<Settings>,
     // mods configuration loaded from the game
-    pub mods_config: Option<ModsConfig>,
+    pub mods_config: Option<ModsConfigData>,
     // list of all installed mods (local and steam)
-    pub mods: Vec<ModMeta>,
+    pub mods: Vec<ModMetaData>,
     // list of active mod ids, sourced from the config or save file
     pub active_mods: Vec<String>,
     // current selected mod in rimru
-    pub selected_mod: Option<ModMeta>,
+    pub selected_mod: Option<ModMetaData>,
 }
 
 impl Project {
@@ -30,7 +33,7 @@ impl Project {
             selected_mod: None,
         };
 
-        match ModsConfig::load() {
+        match ModsConfigData::load() {
             Some(config) => {
                 project.active_mods = config.active_mods.clone();
                 project.mods_config = Some(config);
@@ -68,7 +71,7 @@ impl Project {
     fn load_local_mods(&mut self, cx: &mut Context<Self>) {
         let local_mods_dir = self.settings.read(cx).local_mods_dir();
         log::trace!("loading local mods from {:?}", local_mods_dir);
-        self.load_mods_from_dir(local_mods_dir, ModMeta::new_local);
+        self.load_mods_from_dir(local_mods_dir, ModMetaData::new_local);
     }
 
     fn load_steam_mods(&mut self, cx: &mut Context<Self>) {
@@ -76,7 +79,7 @@ impl Project {
         log::trace!("loading steam mods from {:?}", steam_mods_dir);
         let mods = self.mods.clone();
         self.load_mods_from_dir(steam_mods_dir, move |path| {
-            ModMeta::new_steam(path).map(|mut sm| {
+            ModMetaData::new_steam(path).map(|mut sm| {
                 match mods
                     .iter()
                     .any(|m| m.source == Source::Local && m.id == sm.id)
@@ -93,7 +96,7 @@ impl Project {
 
     fn load_mods_from_dir<F>(&mut self, dir: &PathBuf, mod_fn: F)
     where
-        F: Fn(PathBuf) -> Option<ModMeta>,
+        F: Fn(PathBuf) -> Option<ModMetaData>,
     {
         match read_dir(dir) {
             Ok(entries) => {
@@ -113,8 +116,8 @@ impl Project {
         }
     }
 
-    pub fn active_mods(&self) -> Vec<ModMeta> {
-        let mut active_mods: Vec<ModMeta> = self
+    pub fn active_mods(&self) -> Vec<ModMetaData> {
+        let mut active_mods: Vec<ModMetaData> = self
             .mods
             .iter()
             .filter(|m| {
@@ -146,7 +149,7 @@ impl Project {
         active_mods
     }
 
-    pub fn inactive_mods(&self) -> Vec<ModMeta> {
+    pub fn inactive_mods(&self) -> Vec<ModMetaData> {
         self.mods
             .iter()
             .filter(|m| !self.active_mods.contains(&m.id.to_ascii_lowercase()))
@@ -154,15 +157,15 @@ impl Project {
             .collect()
     }
 
-    pub fn selected_mod(&self) -> Option<&ModMeta> {
+    pub fn selected_mod(&self) -> Option<&ModMetaData> {
         self.selected_mod.as_ref()
     }
 
-    pub fn select_mod(&mut self, mod_meta: &ModMeta) {
+    pub fn select_mod(&mut self, mod_meta: &ModMetaData) {
         self.selected_mod = Some(mod_meta.clone());
     }
 
-    pub fn toggle_mod(&mut self, mod_meta: &ModMeta) {
+    pub fn toggle_mod(&mut self, mod_meta: &ModMetaData) {
         match self
             .active_mods
             .iter()
