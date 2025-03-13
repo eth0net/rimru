@@ -40,6 +40,7 @@ impl Render for ModDetails {
                     .overflow_y_scroll()
                     .when(selected.is_some(), |this| {
                         let mod_meta = selected.unwrap();
+                        // todo: display mod image
                         this.child(format!(
                             "{} ({})",
                             mod_meta.name.clone(),

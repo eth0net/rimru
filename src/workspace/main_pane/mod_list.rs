@@ -108,6 +108,11 @@ impl Render for ModList {
                                             }
                                         }
                                     })
+                                    // todo: display source icon
+                                    // todo: display mod icon
+                                    // todo: highlight selected mod
+                                    // todo: indicate if mod is incompatible with game version
+                                    // todo: indicate if the mod has any load order conflicts
                                     .child(mod_name),
                             );
                         }
