@@ -49,3 +49,7 @@ pub fn mods_config_file() -> PathBuf {
 pub fn mod_about_file(mod_dir: &Path) -> PathBuf {
     mod_dir.join("About/About.xml")
 }
+
+pub fn mod_preview_file(mod_dir: &Path) -> PathBuf {
+    mod_dir.join("About/Preview.png")
+}

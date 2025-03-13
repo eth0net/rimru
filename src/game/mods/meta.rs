@@ -27,7 +27,7 @@ impl ModMetaData {
             ..Default::default()
         };
 
-        let about_path = paths::mod_about_file(&path);
+        let about_path = mod_meta.about_file_path();
         let about_file = File::open(&about_path).ok()?;
         let about_file = BufReader::new(about_file);
         let parser_config = xml::ParserConfig::new()
@@ -712,6 +712,14 @@ impl ModMetaData {
             }
             mod_meta
         })
+    }
+
+    pub fn about_file_path(&self) -> PathBuf {
+        paths::mod_about_file(&self.path)
+    }
+
+    pub fn preview_file_path(&self) -> PathBuf {
+        paths::mod_preview_file(&self.path)
     }
 
     pub fn is_official(&self) -> bool {

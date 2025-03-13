@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use gpui::{
     Context, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, prelude::*,
-    rgb, uniform_list,
+    relative, rgb, uniform_list,
 };
 
 use crate::{game::mods::meta::Source, project::Project, theme::colours};
@@ -40,7 +40,7 @@ impl Render for ModList {
             .flex()
             .flex_col()
             .h_full()
-            .w_1_4()
+            .w(relative(0.3))
             .border_r_1()
             .border_color(rgb(colours::BORDER))
             .child(
@@ -71,40 +71,33 @@ impl Render for ModList {
                                     .on_click({
                                         let mod_meta = mod_meta.clone();
                                         let project = project.clone();
-                                        move |event, _window, cx| {
-                                            match event.down.button {
-                                                MouseButton::Left => {
-                                                    match event.down.click_count {
-                                                        1 => {
-                                                            // Select
-                                                            log::debug!("select {mod_meta:?}");
-                                                            project.update(cx, {
-                                                                let mod_meta = mod_meta.clone();
-                                                                move |project, _| {
-                                                                    project.select_mod(&mod_meta);
-                                                                }
-                                                            });
+                                        move |event, _window, cx| match event.down.button {
+                                            MouseButton::Left => match event.down.click_count {
+                                                1 => {
+                                                    log::debug!("select {mod_meta:?}");
+                                                    project.update(cx, {
+                                                        let mod_meta = mod_meta.clone();
+                                                        move |project, _| {
+                                                            project.select_mod(&mod_meta);
                                                         }
-                                                        2 => {
-                                                            // Activate/deactivate
-                                                            log::debug!("toggle {mod_meta:?}");
-                                                            project.update(cx, {
-                                                                let mod_meta = mod_meta.clone();
-                                                                move |project, _| {
-                                                                    project.toggle_mod(&mod_meta);
-                                                                }
-                                                            });
+                                                    });
+                                                }
+                                                2 => {
+                                                    log::debug!("toggle {mod_meta:?}");
+                                                    project.update(cx, {
+                                                        let mod_meta = mod_meta.clone();
+                                                        move |project, _| {
+                                                            project.toggle_mod(&mod_meta);
                                                         }
-                                                        _ => {}
-                                                    }
+                                                    });
                                                 }
-                                                MouseButton::Right => {
-                                                    // Open context menu
-                                                    log::debug!("context menu {mod_meta:?}");
-                                                }
-                                                _ => {
-                                                    log::debug!("unhandled click {mod_meta:?}")
-                                                }
+                                                _ => {}
+                                            },
+                                            MouseButton::Right => {
+                                                log::debug!("context menu {mod_meta:?}");
+                                            }
+                                            _ => {
+                                                log::debug!("unhandled click {mod_meta:?}")
                                             }
                                         }
                                     })
