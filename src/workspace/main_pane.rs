@@ -33,7 +33,7 @@ impl Render for MainPane {
             .flex_grow()
             .flex()
             .flex_row()
-            .overflow_hidden() // todo: make this scrollable
+            .overflow_hidden()
             .child(self.inactive_list.clone())
             .child(self.active_list.clone())
             .child(self.details_pane.clone())

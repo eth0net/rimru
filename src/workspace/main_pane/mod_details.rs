@@ -32,11 +32,12 @@ impl Render for ModDetails {
             )
             .child(
                 div()
+                    .id("mod-details")
                     .flex()
                     .flex_col()
                     .px_2()
                     .py_1()
-                    .overflow_x_hidden()
+                    .overflow_y_scroll()
                     .when(selected.is_some(), |this| {
                         let mod_meta = selected.unwrap();
                         this.child(format!(
