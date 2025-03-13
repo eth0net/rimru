@@ -15,15 +15,7 @@ pub struct ModMetaData {
 }
 
 impl ModMetaData {
-    pub fn is_local(&self) -> bool {
-        self.source.is_local()
-    }
-
-    pub fn is_steam(&self) -> bool {
-        self.source.is_steam()
-    }
-
-    pub(crate) fn new(path: PathBuf) -> Option<Self> {
+    pub fn new(path: PathBuf) -> Option<Self> {
         if !path.is_dir() {
             log::error!("Path is not a directory: {:?}", path);
             return None;
@@ -660,6 +652,13 @@ impl ModMetaData {
         Some(mod_meta)
     }
 
+    pub fn new_official(path: PathBuf) -> Option<Self> {
+        Self::new(path).map(|mut m| {
+            m.source = Source::Official;
+            m
+        })
+    }
+
     pub fn new_local(path: PathBuf) -> Option<Self> {
         Self::new(path).map(|mut m| {
             m.source = Source::Local;
@@ -679,13 +678,25 @@ impl ModMetaData {
             Some(m)
         })
     }
+
+    pub fn is_official(&self) -> bool {
+        self.source.is_official()
+    }
+
+    pub fn is_local(&self) -> bool {
+        self.source.is_local()
+    }
+
+    pub fn is_steam(&self) -> bool {
+        self.source.is_steam()
+    }
 }
 
-// todo: add dlc source
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum Source {
     #[default]
     Unknown,
+    Official,
     Local,
     Steam {
         id: String,
@@ -693,6 +704,10 @@ pub enum Source {
 }
 
 impl Source {
+    pub fn is_official(&self) -> bool {
+        matches!(self, Source::Official)
+    }
+
     pub fn is_local(&self) -> bool {
         matches!(self, Source::Local)
     }

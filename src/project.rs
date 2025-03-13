@@ -3,9 +3,12 @@ use std::{fs::read_dir, path::PathBuf};
 use gpui::{Context, Entity};
 
 use crate::{
-    game::mods::{
-        config::ModsConfigData,
-        meta::{ModMetaData, Source},
+    game::{
+        mods::{
+            config::ModsConfigData,
+            meta::{ModMetaData, Source},
+        },
+        paths,
     },
     settings::Settings,
 };
@@ -52,6 +55,7 @@ impl Project {
     fn load_mods(&mut self, cx: &mut Context<Self>) {
         log::debug!("loading mods");
 
+        self.load_official_mods();
         self.load_local_mods(cx);
         self.load_steam_mods(cx);
 
@@ -66,6 +70,21 @@ impl Project {
         self.selected_mod = self.mods.first().cloned();
 
         log::debug!("finished loading mods");
+    }
+
+    fn load_official_mods(&mut self) {
+        let official_mods_dir = &paths::official_mods_dir();
+        log::trace!("loading official mods from {:?}", official_mods_dir);
+        self.load_mods_from_dir(official_mods_dir, |path| {
+            ModMetaData::new_official(path).map(|mut om| {
+                om.name = match om.id.split('.').last() {
+                    Some(name) if name.eq_ignore_ascii_case("rimworld") => "Core".to_string(),
+                    Some(name) => name.to_string(),
+                    None => unreachable!(),
+                };
+                om
+            })
+        });
     }
 
     fn load_local_mods(&mut self, cx: &mut Context<Self>) {
