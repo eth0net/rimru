@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
 use gpui::{
-    Context, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, prelude::*,
-    relative, rgb, uniform_list,
+    Context, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, img,
+    prelude::*, relative, rgb, uniform_list,
 };
 
 use crate::{game::mods::meta::Source, project::Project, theme::colours};
@@ -66,6 +66,10 @@ impl Render for ModList {
                                 div()
                                     .id((list_name.clone(), ix))
                                     .cursor_pointer()
+                                    .flex()
+                                    .flex_row()
+                                    .items_center()
+                                    .gap_1()
                                     .px_2()
                                     .text_overflow(TextOverflow::Ellipsis("..."))
                                     .on_click({
@@ -101,19 +105,54 @@ impl Render for ModList {
                                             }
                                         }
                                     })
-                                    // todo: display mod icon
                                     // todo: highlight selected mod
                                     // todo: indicate if mod is incompatible with game version
                                     // todo: indicate if the mod has any load order conflicts
-                                    .child(format!(
-                                        "{}{}",
-                                        match mod_meta.source {
-                                            // todo: display source icon
-                                            Source::Official | Source::Local => "[ ] ",
-                                            _ => "",
-                                        },
-                                        mod_name,
-                                    )),
+                                    .child(
+                                        div()
+                                            .flex()
+                                            .flex_row()
+                                            .items_center()
+                                            .justify_center()
+                                            .h_6()
+                                            .w_6()
+                                            .border_1()
+                                            .border_color(rgb(colours::BORDER))
+                                            .child({
+                                                match mod_meta.source {
+                                                    Source::Official => "O",
+                                                    Source::Local => "L",
+                                                    Source::Steam => "S",
+                                                    Source::Unknown => "?",
+                                                }
+                                            }),
+                                    )
+                                    .child(
+                                        div()
+                                            .flex()
+                                            .flex_row()
+                                            .items_center()
+                                            .justify_center()
+                                            .h_6()
+                                            .w_6()
+                                            .child({
+                                                match std::fs::metadata(mod_meta.icon_file_path()) {
+                                                    Ok(_) => img(mod_meta.icon_file_path())
+                                                        .max_h_full()
+                                                        .into_any(),
+                                                    Err(_) => div()
+                                                        .flex()
+                                                        .items_center()
+                                                        .justify_center()
+                                                        .size_full()
+                                                        .border_1()
+                                                        .border_color(rgb(colours::BORDER))
+                                                        .child("?")
+                                                        .into_any(),
+                                                }
+                                            }),
+                                    )
+                                    .child(mod_name),
                             );
                         }
                         items

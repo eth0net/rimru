@@ -53,3 +53,7 @@ pub fn mod_about_file(mod_dir: &Path) -> PathBuf {
 pub fn mod_preview_file(mod_dir: &Path) -> PathBuf {
     mod_dir.join("About/Preview.png")
 }
+
+pub fn mod_icon_file(mod_dir: &Path) -> PathBuf {
+    mod_dir.join("About/ModIcon.png")
+}

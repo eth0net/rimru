@@ -722,6 +722,10 @@ impl ModMetaData {
         paths::mod_preview_file(&self.path)
     }
 
+    pub fn icon_file_path(&self) -> PathBuf {
+        paths::mod_icon_file(&self.path)
+    }
+
     pub fn is_official(&self) -> bool {
         self.source.is_official()
     }
