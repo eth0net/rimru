@@ -3,7 +3,7 @@ use std::{fs::read_dir, path::PathBuf};
 use gpui::{Context, Entity};
 
 use crate::{
-    game::mods::{ModMeta, ModsConfig},
+    game::mods::{ModMeta, ModsConfig, Source},
     settings::Settings,
 };
 
@@ -49,18 +49,8 @@ impl Project {
     fn load_mods(&mut self, cx: &mut Context<Self>) {
         log::debug!("loading mods");
 
-        let (local_mods_dir, steam_mods_dir) = self.settings.read_with(cx, |settings, _| {
-            (
-                settings.local_mods_dir().clone(),
-                settings.steam_mods_dir().clone(),
-            )
-        });
-
-        log::trace!("loading local mods from {:?}", local_mods_dir);
-        self.load_mods_from_dir(&local_mods_dir, ModMeta::new_local);
-
-        log::trace!("loading steam mods from {:?}", steam_mods_dir);
-        self.load_mods_from_dir(&steam_mods_dir, ModMeta::new_steam);
+        self.load_local_mods(cx);
+        self.load_steam_mods(cx);
 
         log::trace!("sorting loaded mods");
         self.mods.sort_by_key(|mod_meta| mod_meta.name.clone());
@@ -68,6 +58,32 @@ impl Project {
         self.selected_mod = self.mods.first().cloned();
 
         log::debug!("finished loading mods");
+    }
+
+    fn load_local_mods(&mut self, cx: &mut Context<Self>) {
+        let local_mods_dir = self.settings.read(cx).local_mods_dir();
+        log::trace!("loading local mods from {:?}", local_mods_dir);
+        self.load_mods_from_dir(local_mods_dir, ModMeta::new_local);
+    }
+
+    fn load_steam_mods(&mut self, cx: &mut Context<Self>) {
+        let steam_mods_dir = self.settings.read(cx).steam_mods_dir();
+        log::trace!("loading steam mods from {:?}", steam_mods_dir);
+        let mods = self.mods.clone();
+        self.load_mods_from_dir(steam_mods_dir, move |path| {
+            ModMeta::new_steam(path).map(|mut sm| {
+                match mods
+                    .iter()
+                    .any(|m| m.source == Source::Local && m.id == sm.id)
+                {
+                    true => {
+                        sm.id += "_steam";
+                        sm
+                    }
+                    false => sm,
+                }
+            })
+        });
     }
 
     fn load_mods_from_dir<F>(&mut self, dir: &PathBuf, mod_fn: F)
@@ -89,16 +105,6 @@ impl Project {
                 });
             }
             Err(_) => log::warn!("could not read directory"),
-        }
-    }
-
-    pub fn toggle_mod(&mut self, mod_id: &str) {
-        if let Some(index) = self.active_mods.iter().position(|id| id == mod_id) {
-            self.active_mods.remove(index);
-            log::info!("deactivated mod: {}", mod_id);
-        } else {
-            self.active_mods.push(mod_id.to_string());
-            log::info!("activated mod: {}", mod_id);
         }
     }
 
@@ -142,5 +148,22 @@ impl Project {
 
     pub fn select_mod(&mut self, mod_meta: &ModMeta) {
         self.selected_mod = Some(mod_meta.clone());
+    }
+
+    pub fn toggle_mod(&mut self, mod_meta: &ModMeta) {
+        match self
+            .active_mods
+            .iter()
+            .position(|id| id.eq_ignore_ascii_case(&mod_meta.id))
+        {
+            Some(index) => {
+                self.active_mods.remove(index);
+                log::info!("deactivated mod: {}", mod_meta.id);
+            }
+            None => {
+                self.active_mods.push(mod_meta.id.to_string());
+                log::info!("activated mod: {}", mod_meta.id);
+            }
+        }
     }
 }

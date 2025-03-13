@@ -89,11 +89,9 @@ impl Render for ModList {
                                                             // Activate/deactivate
                                                             log::debug!("toggle {mod_meta:?}");
                                                             project.update(cx, {
-                                                                let mod_id = mod_meta.id.clone();
+                                                                let mod_meta = mod_meta.clone();
                                                                 move |project, _| {
-                                                                    project.toggle_mod(
-                                                                        mod_id.clone().as_str(),
-                                                                    );
+                                                                    project.toggle_mod(&mod_meta);
                                                                 }
                                                             });
                                                         }
