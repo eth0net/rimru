@@ -10,6 +10,7 @@ pub struct ModMetaData {
     pub name: String,
     pub authors: Vec<String>,
     pub description: String,
+    pub steam_app_id: Option<String>,
     pub path: PathBuf,
     pub source: Source,
 }
@@ -541,6 +542,40 @@ impl ModMetaData {
                                         }
                                     }
                                 },
+                                "steamappid" => loop {
+                                    match reader.next() {
+                                        Ok(XmlEvent::EndElement { name }) => {
+                                            if name.local_name.eq_ignore_ascii_case("steamAppId") {
+                                                break;
+                                            }
+                                        }
+                                        Ok(XmlEvent::Characters(chars)) => {
+                                            mod_meta.steam_app_id = match &mod_meta.steam_app_id {
+                                                Some(old_steam_app_id) => {
+                                                    Some(old_steam_app_id.to_string() + &chars)
+                                                }
+                                                None => Some(chars),
+                                            };
+                                        }
+                                        Ok(event) => {
+                                            log::warn!(
+                                                "error parsing steamAppId from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected element",
+                                                event,
+                                            );
+                                        }
+                                        Err(err) => {
+                                            log::error!(
+                                                "error parsing steamAppId from {:?}: {}: {:?}",
+                                                about_path,
+                                                "unexpected error",
+                                                err
+                                            );
+                                            break;
+                                        }
+                                    }
+                                },
                                 "supportedversions" => loop {
                                     match reader.next() {
                                         Ok(XmlEvent::EndElement { name }) => {
@@ -654,29 +689,28 @@ impl ModMetaData {
     }
 
     pub fn new_official(path: PathBuf) -> Option<Self> {
-        Self::new(path).map(|mut m| {
-            m.source = Source::Official;
-            m
+        Self::new(path).map(|mut mod_meta| {
+            mod_meta.source = Source::Official;
+            mod_meta
         })
     }
 
     pub fn new_local(path: PathBuf) -> Option<Self> {
-        Self::new(path).map(|mut m| {
-            m.source = Source::Local;
-            m
+        Self::new(path).map(|mut mod_meta| {
+            mod_meta.source = Source::Local;
+            mod_meta
         })
     }
 
     pub fn new_steam(path: PathBuf) -> Option<Self> {
-        Self::new(path).and_then(|mut m| {
-            let dir_name = m.path.file_name().and_then(|name| name.to_str())?;
-
-            // todo: use steamAppId from About.xml if
-            m.source = Source::Steam {
-                id: dir_name.to_string(),
-            };
-
-            Some(m)
+        Self::new(path).map(|mut mod_meta| {
+            mod_meta.source = Source::Steam;
+            if mod_meta.steam_app_id.is_none() {
+                if let Some(dir_name) = mod_meta.path.file_name().and_then(|name| name.to_str()) {
+                    mod_meta.steam_app_id = Some(dir_name.to_string());
+                }
+            }
+            mod_meta
         })
     }
 
@@ -699,9 +733,7 @@ pub enum Source {
     Unknown,
     Official,
     Local,
-    Steam {
-        id: String,
-    },
+    Steam,
 }
 
 impl Source {
@@ -714,6 +746,6 @@ impl Source {
     }
 
     pub fn is_steam(&self) -> bool {
-        matches!(self, Source::Steam { .. })
+        matches!(self, Source::Steam)
     }
 }
