@@ -12,6 +12,8 @@ impl ModDetails {
     }
 }
 
+// todo: remove details header?
+// todo: add placeholder with no selected mod
 impl Render for ModDetails {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let selected = self.project.read(cx).selected_mod();

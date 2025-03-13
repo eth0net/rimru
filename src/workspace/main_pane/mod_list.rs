@@ -7,6 +7,7 @@ use gpui::{
 
 use crate::{game::mods::meta::Source, project::Project, theme::colours};
 
+// todo: add list actions for refresh / sort etc
 pub struct ModList {
     project: Entity<Project>,
     list_type: ModListType,
@@ -31,6 +32,7 @@ impl Render for ModList {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let project = self.project.clone();
         let list_name = SharedString::from(self.list_type.to_string());
+        // todo: move this to callback?
         let mods = project.read_with(cx, |project, _| match self.list_type {
             ModListType::Active => project.active_mods(),
             ModListType::Inactive => project.inactive_mods(),
@@ -53,6 +55,7 @@ impl Render for ModList {
                     .py_1()
                     .child(self.list_type.to_string()),
             )
+            // todo: add search bar to filter mods in this list
             .child(
                 uniform_list(cx.entity().clone(), list_name.clone(), mods.len(), {
                     let mods = mods.clone();
@@ -119,6 +122,7 @@ impl Render for ModList {
                                             .border_1()
                                             .border_color(rgb(colours::BORDER))
                                             .child({
+                                                // todo: add source icons instead of letters
                                                 match mod_meta.source {
                                                     Source::Official => "O",
                                                     Source::Local => "L",
