@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use gpui::{
-    Context, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, img,
+    Context, Div, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, img,
     prelude::*, relative, rgb, uniform_list,
 };
 
@@ -29,7 +29,7 @@ impl ModList {
 }
 
 impl Render for ModList {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let project = self.project.clone();
         let list_name = SharedString::from(self.list_type.to_string());
         // todo: move this to callback?
@@ -37,6 +37,22 @@ impl Render for ModList {
             ModListType::Active => project.active_mods(),
             ModListType::Inactive => project.inactive_mods(),
         });
+
+        fn fake_button(child: impl IntoElement) -> Div {
+            div()
+                .flex()
+                .flex_row()
+                .items_center()
+                .justify_center()
+                .border_1()
+                .border_color(rgb(colours::BORDER))
+                .rounded_md()
+                .child(child)
+        }
+
+        fn fake_icon(child: impl IntoElement) -> Div {
+            fake_button(child).h_6().w_6()
+        }
 
         div()
             .flex()
@@ -51,11 +67,14 @@ impl Render for ModList {
                     .flex_row()
                     .justify_center()
                     .items_center()
+                    .gap_4()
                     .px_2()
                     .py_1()
-                    .child(self.list_type.to_string()),
+                    .child(self.list_type.to_string())
+                    .child(div().flex().flex_row().gap_1().text_xs().children(buttons)),
             )
             // todo: add search bar to filter mods in this list
+            // todo: preload images for visible mods in this list
             .child(
                 uniform_list(cx.entity().clone(), list_name.clone(), mods.len(), {
                     let mods = mods.clone();
@@ -111,26 +130,15 @@ impl Render for ModList {
                                     // todo: highlight selected mod
                                     // todo: indicate if mod is incompatible with game version
                                     // todo: indicate if the mod has any load order conflicts
-                                    .child(
-                                        div()
-                                            .flex()
-                                            .flex_row()
-                                            .items_center()
-                                            .justify_center()
-                                            .h_6()
-                                            .w_6()
-                                            .border_1()
-                                            .border_color(rgb(colours::BORDER))
-                                            .child({
-                                                // todo: add source icons instead of letters
-                                                match mod_meta.source {
-                                                    Source::Official => "O",
-                                                    Source::Local => "L",
-                                                    Source::Steam => "S",
-                                                    Source::Unknown => "?",
-                                                }
-                                            }),
-                                    )
+                                    .child(fake_icon({
+                                        // todo: add source icons instead of letters
+                                        match mod_meta.source {
+                                            Source::Official => "O",
+                                            Source::Local => "L",
+                                            Source::Steam => "S",
+                                            Source::Unknown => "?",
+                                        }
+                                    }))
                                     .child(
                                         div()
                                             .flex()
@@ -144,15 +152,7 @@ impl Render for ModList {
                                                     Ok(_) => img(mod_meta.icon_file_path())
                                                         .max_h_full()
                                                         .into_any(),
-                                                    Err(_) => div()
-                                                        .flex()
-                                                        .items_center()
-                                                        .justify_center()
-                                                        .size_full()
-                                                        .border_1()
-                                                        .border_color(rgb(colours::BORDER))
-                                                        .child("?")
-                                                        .into_any(),
+                                                    Err(_) => fake_icon("?").into_any(),
                                                 }
                                             }),
                                     )
