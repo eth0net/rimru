@@ -200,4 +200,16 @@ impl Project {
             }
         }
     }
+
+    pub fn save_mod_config(&self) {
+        match &self.mods_config {
+            Some(mods_config) => {
+                log::info!("saving mods config");
+                mods_config.save()
+            }
+            None => {
+                log::error!("no mods config to save");
+            }
+        }
+    }
 }

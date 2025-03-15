@@ -54,6 +54,26 @@ impl Render for ModList {
             fake_button(child).h_6().w_6()
         }
 
+        let buttons = match self.list_type {
+            ModListType::Active => {
+                vec![
+                    // fake_button("reset").id("reset"),
+                    // fake_button("sort").id("sort"),
+                    fake_button("save").id("save").on_click({
+                        let project = self.project.clone();
+                        move |_, _, cx| {
+                            project.update(cx, |project, _| {
+                                project.save_mod_config();
+                            });
+                        }
+                    }),
+                ]
+            }
+            ModListType::Inactive => vec![
+                // fake_button("refresh").id("refresh"),
+            ],
+        };
+
         div()
             .flex()
             .flex_col()
