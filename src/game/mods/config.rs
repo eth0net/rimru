@@ -45,7 +45,7 @@ impl ModsConfigData {
                         "modsconfigdata" => loop {
                             match reader.next() {
                                 Ok(XmlReaderEvent::EndElement { name }) => {
-                                    if name.local_name.eq_ignore_ascii_case("modsconfigdata") {
+                                    if name.local_name.eq_ignore_ascii_case("modsConfigData") {
                                         break;
                                     }
                                 }
@@ -66,8 +66,9 @@ impl ModsConfigData {
                                                 }) => loop {
                                                     if !name.local_name.eq_ignore_ascii_case("li") {
                                                         log::error!(
-                                                            "unexpected element in activeMods: {:?}",
-                                                            name
+                                                            "unexpected element {} in activeMods from {:?}",
+                                                            name,
+                                                            mods_config_path,
                                                         );
                                                         break;
                                                     }
@@ -80,20 +81,19 @@ impl ModsConfigData {
                                                                 break;
                                                             }
                                                         }
-                                                        Ok(XmlReaderEvent::Characters(author)) => {
-                                                            mods_config.active_mods.push(author);
+                                                        Ok(XmlReaderEvent::Characters(chars)) => {
+                                                            mods_config.active_mods.push(chars);
                                                         }
                                                         Ok(event) => {
                                                             log::warn!(
-                                                                "error parsing activeMod from {:?}: {}: {:?}",
-                                                                mods_config_path,
-                                                                "unexpected element",
+                                                                "unexpected event {:?} in activeMods li from {:?}",
                                                                 event,
+                                                                mods_config_path,
                                                             );
                                                         }
                                                         Err(err) => {
                                                             log::error!(
-                                                                "error parsing activeMod from {:?}: {}",
+                                                                "error parsing activeMods li from {:?}: {}",
                                                                 mods_config_path,
                                                                 err
                                                             );
@@ -101,13 +101,23 @@ impl ModsConfigData {
                                                         }
                                                     }
                                                 },
-                                                Ok(XmlReaderEvent::Characters(_)) => {}
+                                                Ok(XmlReaderEvent::Characters(chars)) => {
+                                                    if chars.trim().is_empty() {
+                                                        // ignore whitespace
+                                                        continue;
+                                                    }
+                                                    log::warn!(
+                                                        "unexpected characters {} in activeMods from {:?}",
+                                                        chars,
+                                                        mods_config_path,
+                                                    );
+                                                }
+                                                Ok(XmlReaderEvent::Whitespace(_)) => {} // ignore whitespace
                                                 Ok(event) => {
                                                     log::warn!(
-                                                        "error parsing activeMods from {:?}: {}: {:?}",
-                                                        mods_config_path,
-                                                        "unexpected element",
+                                                        "unexpected event {:?} in activeMods from {:?}",
                                                         event,
+                                                        mods_config_path,
                                                     );
                                                 }
                                                 Err(err) => {
@@ -135,8 +145,9 @@ impl ModsConfigData {
                                                 }) => loop {
                                                     if !name.local_name.eq_ignore_ascii_case("li") {
                                                         log::error!(
-                                                            "unexpected element in knownExpansions: {:?}",
-                                                            name
+                                                            "unexpected element {} in knownExpansions from {:?}",
+                                                            name,
+                                                            mods_config_path,
                                                         );
                                                         break;
                                                     }
@@ -149,43 +160,52 @@ impl ModsConfigData {
                                                                 break;
                                                             }
                                                         }
-                                                        Ok(XmlReaderEvent::Characters(author)) => {
+                                                        Ok(XmlReaderEvent::Characters(chars)) => {
                                                             mods_config
                                                                 .known_expansions
-                                                                .push(author);
+                                                                .push(chars);
                                                         }
                                                         Ok(event) => {
                                                             log::warn!(
-                                                                "error parsing knownExpansion from {:?}: {}: {:?}",
-                                                                mods_config_path,
-                                                                "unexpected element",
+                                                                "unexpected event {:?} in knownExpansions li from {:?}",
                                                                 event,
+                                                                mods_config_path,
                                                             );
                                                         }
                                                         Err(err) => {
                                                             log::error!(
-                                                                "error parsing knownExpansion from {:?}: {}",
+                                                                "error parsing knownExpansions li from {:?}: {}",
                                                                 mods_config_path,
-                                                                err
+                                                                err,
                                                             );
                                                             break;
                                                         }
                                                     }
                                                 },
-                                                Ok(XmlReaderEvent::Characters(_)) => {}
+                                                Ok(XmlReaderEvent::Characters(chars)) => {
+                                                    if chars.trim().is_empty() {
+                                                        // ignore whitespace
+                                                        continue;
+                                                    }
+                                                    log::warn!(
+                                                        "unexpected characters {} in knownExpansions from {:?}",
+                                                        chars,
+                                                        mods_config_path,
+                                                    );
+                                                }
+                                                Ok(XmlReaderEvent::Whitespace(_)) => {} // ignore whitespace
                                                 Ok(event) => {
                                                     log::warn!(
-                                                        "error parsing knownExpansions from {:?}: {}: {:?}",
-                                                        mods_config_path,
-                                                        "unexpected element",
+                                                        "unexpected event {:?} in knownExpansions from {:?}",
                                                         event,
+                                                        mods_config_path,
                                                     );
                                                 }
                                                 Err(err) => {
                                                     log::error!(
                                                         "error parsing knownExpansions from {:?}: {}",
                                                         mods_config_path,
-                                                        err
+                                                        err,
                                                     );
                                                     break;
                                                 }
@@ -202,51 +222,47 @@ impl ModsConfigData {
                                                     }
                                                 }
                                                 Ok(XmlReaderEvent::Characters(chars)) => {
-                                                    mods_config.version = chars;
+                                                    mods_config.version += &chars;
                                                 }
                                                 Ok(event) => {
                                                     log::warn!(
-                                                        "error parsing version from {:?}: {}: {:?}",
-                                                        mods_config_path,
-                                                        "unexpected element",
+                                                        "unexpected event {:?} in version from {:?}",
                                                         event,
+                                                        mods_config_path,
                                                     );
                                                 }
                                                 Err(err) => {
                                                     log::error!(
-                                                        "error parsing version from {:?}: {}: {:?}",
+                                                        "error parsing version from {:?}: {:?}",
                                                         mods_config_path,
-                                                        "unexpected error",
                                                         err
                                                     );
                                                     break;
                                                 }
                                             }
                                         },
-                                        unhandled => {
+                                        unexpected => {
                                             log::trace!(
-                                                "unhandled token {} in modsConfigData from {:?}",
-                                                name,
-                                                mods_config_path
+                                                "unexpected element {} in modsConfigData from {:?}",
+                                                unexpected,
+                                                mods_config_path,
                                             );
                                             loop {
                                                 match reader.next() {
                                                     Ok(XmlReaderEvent::EndElement { name }) => {
                                                         if name
                                                             .local_name
-                                                            .eq_ignore_ascii_case(unhandled)
+                                                            .eq_ignore_ascii_case(unexpected)
                                                         {
                                                             break;
                                                         }
                                                     }
-                                                    Ok(_) => {
-                                                        // todo: read and process the elements
-                                                    }
+                                                    Ok(_) => {} // ignore events in unexpected elements
                                                     Err(err) => {
                                                         log::error!(
                                                             "error parsing modsConfigData from {:?}: {}",
                                                             mods_config_path,
-                                                            err
+                                                            err,
                                                         );
                                                         break;
                                                     }
@@ -255,39 +271,57 @@ impl ModsConfigData {
                                         }
                                     }
                                 }
-                                Ok(XmlReaderEvent::Characters(_)) => {}
+                                Ok(XmlReaderEvent::Characters(chars)) => {
+                                    if chars.trim().is_empty() {
+                                        // ignore whitespace
+                                        continue;
+                                    }
+                                    log::warn!(
+                                        "unexpected characters {} in modConfigData from {:?}",
+                                        chars,
+                                        mods_config_path,
+                                    );
+                                }
+                                Ok(XmlReaderEvent::Whitespace(_)) => {} // ignore whitespace
                                 Ok(event) => {
                                     log::warn!(
-                                        "parsing modMetaData from {:?}: {}: {:?}",
-                                        mods_config_path,
-                                        "unexpected element",
+                                        "unexpected event {:?} in modConfigData from {:?}",
                                         event,
+                                        mods_config_path,
                                     );
                                 }
                                 Err(err) => {
                                     log::error!(
-                                        "error parsing element from {:?}: {}",
+                                        "error parsing modsConfigData from {:?}: {}",
                                         mods_config_path,
-                                        err
+                                        err,
                                     );
                                     break;
                                 }
                             }
                         },
-                        a => {
+                        unexpected => {
                             log::trace!(
-                                "skipped parsing {} at root from {:?}",
-                                a,
-                                mods_config_path
+                                "unexpected root element {} from {:?}",
+                                unexpected,
+                                mods_config_path,
                             );
                         }
                     }
                 }
-                Ok(next) => {
-                    log::trace!("unexpected element {:?} from {:?}", next, mods_config_path);
+                Ok(event) => {
+                    log::trace!(
+                        "unexpected root event {:?} from {:?}",
+                        event,
+                        mods_config_path,
+                    );
                 }
                 Err(err) => {
-                    log::error!("error parsing element from {:?}: {}", mods_config_path, err);
+                    log::error!(
+                        "error parsing root event from {:?}: {}",
+                        mods_config_path,
+                        err,
+                    );
                     break;
                 }
             }
