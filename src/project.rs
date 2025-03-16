@@ -13,6 +13,7 @@ use crate::{
     settings::Settings,
 };
 
+#[derive(Debug, Clone)]
 pub struct Project {
     // rimru settings
     pub settings: Entity<Settings>,
@@ -31,25 +32,28 @@ impl Project {
         let mut project = Self {
             settings,
             mods_config: None,
-            active_mods: Vec::new(),
             mods: Vec::new(),
+            active_mods: Vec::new(),
             selected_mod: None,
         };
 
+        project.load_mods_config();
+        project.load_mods(cx);
+        project
+    }
+
+    fn load_mods_config(&mut self) {
+        log::debug!("loading mods config");
         match ModsConfigData::load() {
             Some(config) => {
-                project.active_mods = config.active_mods.clone();
-                project.mods_config = Some(config);
+                self.active_mods = config.active_mods.clone();
+                self.mods_config = Some(config);
             }
             None => {
                 log::warn!("no mods config found");
-                project.active_mods = Vec::new();
-                project.mods_config = None;
+                self.active_mods = Vec::new();
             }
         }
-
-        project.load_mods(cx);
-        project
     }
 
     fn load_mods(&mut self, cx: &mut Context<Self>) {
@@ -60,16 +64,12 @@ impl Project {
         self.load_steam_mods(cx);
 
         log::trace!("sorting loaded mods");
-        {
-            self.mods.sort_by(|a, b| match a.name.cmp(&b.name) {
-                std::cmp::Ordering::Equal => a.id.cmp(&b.id),
-                other => other,
-            });
-        }
+        self.mods.sort_by(|a, b| match a.name.cmp(&b.name) {
+            std::cmp::Ordering::Equal => a.id.cmp(&b.id),
+            other => other,
+        });
 
         self.selected_mod = self.mods.first().cloned();
-
-        log::debug!("finished loading mods");
     }
 
     fn load_official_mods(&mut self) {
