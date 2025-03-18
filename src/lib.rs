@@ -1,5 +1,7 @@
 pub mod actions;
+pub mod assets;
 pub mod game;
+pub mod icon;
 pub mod menu;
 pub mod project;
 pub mod settings;

@@ -6,7 +6,10 @@ use std::{
 
 use xml::reader::{EventReader, XmlEvent as ReaderEvent};
 
-use crate::game::{paths, xml::*};
+use crate::{
+    game::{paths, xml::*},
+    icon::IconName,
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct ModMetaData {
@@ -301,6 +304,15 @@ pub enum Source {
 }
 
 impl Source {
+    pub fn icon_name(&self) -> IconName {
+        match self {
+            Source::Unknown => IconName::Unknown,
+            Source::Official => IconName::RimWorld,
+            Source::Local => IconName::Local,
+            Source::Steam => IconName::Steam,
+        }
+    }
+
     pub fn is_official(&self) -> bool {
         matches!(self, Source::Official)
     }

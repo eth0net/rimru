@@ -1,11 +1,15 @@
-use std::fmt::Display;
+use std::{fmt::Display, fs};
 
 use gpui::{
     Context, Div, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, img,
     prelude::*, relative, rgb, uniform_list,
 };
 
-use crate::{game::mods::meta::Source, project::Project, theme::colours};
+use crate::{
+    icon::{Icon, IconName},
+    project::Project,
+    theme::colours,
+};
 
 // todo: add list actions for refresh / sort etc
 pub struct ModList {
@@ -38,28 +42,21 @@ impl Render for ModList {
             ModListType::Inactive => project.inactive_mods(),
         });
 
-        fn fake_button(child: impl IntoElement) -> Div {
+        fn icon(icon: IconName) -> Div {
             div()
                 .flex()
                 .flex_row()
                 .items_center()
                 .justify_center()
-                .border_1()
-                .border_color(rgb(colours::BORDER))
-                .rounded_md()
-                .child(child)
-        }
-
-        fn fake_icon(child: impl IntoElement) -> Div {
-            fake_button(child).h_6().w_6()
+                .flex_none()
+                .child(Icon::new(icon))
         }
 
         let buttons = match self.list_type {
             ModListType::Active => {
                 vec![
-                    // fake_button("reset").id("reset"),
-                    // fake_button("sort").id("sort"),
-                    fake_button("save").id("save").on_click({
+                    // icon(IconName::Sort).id("sort"),
+                    icon(IconName::Save).id("save").on_click({
                         let project = self.project.clone();
                         move |_, _, cx| {
                             project.update(cx, |project, _| {
@@ -67,10 +64,11 @@ impl Render for ModList {
                             });
                         }
                     }),
+                    // icon(IconName::Reset).id("reset"),
                 ]
             }
             ModListType::Inactive => vec![
-                // fake_button("refresh").id("refresh"),
+                // icon(IconName::Refresh).id("refresh"),
             ],
         };
 
@@ -81,6 +79,7 @@ impl Render for ModList {
             .w(relative(0.3))
             .border_r_1()
             .border_color(rgb(colours::BORDER))
+            .text_sm()
             .child(
                 div()
                     .flex()
@@ -90,8 +89,24 @@ impl Render for ModList {
                     .gap_4()
                     .px_2()
                     .py_1()
-                    .child(self.list_type.to_string())
-                    .child(div().flex().flex_row().gap_1().text_xs().children(buttons)),
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .justify_center()
+                            .items_center()
+                            .child(self.list_type.to_string()),
+                    )
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .justify_center()
+                            .items_center()
+                            .gap_1()
+                            .text_xs()
+                            .children(buttons),
+                    ),
             )
             // todo: add search bar to filter mods in this list
             // todo: preload images for visible mods in this list
@@ -150,15 +165,7 @@ impl Render for ModList {
                                     // todo: highlight selected mod
                                     // todo: indicate if mod is incompatible with game version
                                     // todo: indicate if the mod has any load order conflicts
-                                    .child(fake_icon({
-                                        // todo: add source icons instead of letters
-                                        match mod_meta.source {
-                                            Source::Official => "O",
-                                            Source::Local => "L",
-                                            Source::Steam => "S",
-                                            Source::Unknown => "?",
-                                        }
-                                    }))
+                                    .child(icon(mod_meta.source.icon_name()))
                                     .child(
                                         div()
                                             .flex()
@@ -168,11 +175,11 @@ impl Render for ModList {
                                             .h_6()
                                             .w_6()
                                             .child({
-                                                match std::fs::metadata(mod_meta.icon_file_path()) {
+                                                match fs::metadata(mod_meta.icon_file_path()) {
                                                     Ok(_) => img(mod_meta.icon_file_path())
                                                         .max_h_full()
                                                         .into_any(),
-                                                    Err(_) => fake_icon("?").into_any(),
+                                                    Err(_) => icon(IconName::Unknown).into_any(),
                                                 }
                                             }),
                                     )

@@ -1,13 +1,13 @@
 use gpui::{
     App, Application, Bounds, TitlebarOptions, WindowBounds, WindowOptions, prelude::*, px, size,
 };
-use rimru::{actions::Quit, menu, workspace::Workspace};
+use rimru::{actions::Quit, assets::Assets, menu, workspace::Workspace};
 
 fn main() {
     env_logger::init();
     log::info!("======== starting rimru ========");
 
-    let app = Application::new();
+    let app = Application::new().with_assets(Assets);
 
     app.run(|cx| {
         menu::init(cx);

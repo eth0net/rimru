@@ -3728,9 +3728,11 @@ dependencies = [
 name = "rimru"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "env_logger",
  "gpui",
  "log",
+ "rust-embed",
  "shellexpand",
  "smallvec",
  "xml",
