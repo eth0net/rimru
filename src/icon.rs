@@ -1,5 +1,6 @@
 use gpui::{
-    App, Hsla, IntoElement, Rems, RenderOnce, SharedString, Styled, Window, img, rems, rgb, svg,
+    App, Hsla, ImageSource, IntoElement, Rems, RenderOnce, SharedString, Styled, Window, img, rems,
+    rgb, svg,
 };
 
 use crate::theme::colours;
@@ -60,33 +61,31 @@ impl IconSize {
 }
 
 pub enum IconSource {
-    Svg,
-    Img,
+    Svg(SharedString),
+    Img(ImageSource),
 }
 
 impl From<IconName> for IconSource {
     fn from(icon: IconName) -> Self {
         if icon.path().ends_with(".svg") {
-            IconSource::Svg
+            IconSource::Svg(icon.path().into())
         } else {
-            IconSource::Img
+            IconSource::Img(icon.path().into())
         }
     }
 }
 
-impl From<SharedString> for IconSource {
-    fn from(path: SharedString) -> Self {
-        if path.starts_with("icons/") && path.ends_with(".svg") {
-            IconSource::Svg
-        } else {
-            IconSource::Img
-        }
+impl<I> From<I> for IconSource
+where
+    I: Into<ImageSource>,
+{
+    fn from(path: I) -> Self {
+        IconSource::Img(path.into())
     }
 }
 
 #[derive(IntoElement)]
 pub struct Icon {
-    path: SharedString,
     format: IconSource,
     colour: Hsla,
     size: Rems,
@@ -95,17 +94,15 @@ pub struct Icon {
 impl Icon {
     pub fn new(icon: IconName) -> Self {
         Icon {
-            path: icon.path().into(),
             format: icon.into(),
             colour: rgb(colours::TEXT).into(),
             size: IconSize::default().rems(),
         }
     }
 
-    pub fn from_path(path: impl Into<SharedString>) -> Self {
+    pub fn from_path(path: impl Into<ImageSource>) -> Self {
         let path = path.into();
         Icon {
-            path: path.clone(),
             format: path.into(),
             colour: rgb(colours::TEXT).into(),
             size: IconSize::default().rems(),
@@ -132,16 +129,13 @@ impl From<IconName> for Icon {
 impl RenderOnce for Icon {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
         match self.format {
-            IconSource::Svg => svg()
+            IconSource::Svg(path) => svg()
                 .size(self.size)
                 .flex_none()
-                .path(self.path)
+                .path(path)
                 .text_color(self.colour)
                 .into_any_element(),
-            IconSource::Img => img(self.path)
-                .size(self.size)
-                .flex_none()
-                .into_any_element(),
+            IconSource::Img(path) => img(path).size(self.size).flex_none().into_any_element(),
         }
     }
 }

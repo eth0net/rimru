@@ -1,8 +1,8 @@
 use std::{fmt::Display, fs};
 
 use gpui::{
-    Context, Div, Entity, IntoElement, MouseButton, SharedString, TextOverflow, Window, div, img,
-    prelude::*, relative, rgb, uniform_list,
+    Context, Div, Entity, ImageSource, IntoElement, MouseButton, SharedString, TextOverflow,
+    Window, div, prelude::*, relative, rgb, uniform_list,
 };
 
 use crate::{
@@ -42,7 +42,7 @@ impl Render for ModList {
             ModListType::Inactive => project.inactive_mods(),
         });
 
-        fn icon(icon: IconName) -> Div {
+        fn icon_name(icon: IconName) -> Div {
             div()
                 .flex()
                 .flex_row()
@@ -52,11 +52,21 @@ impl Render for ModList {
                 .child(Icon::new(icon))
         }
 
+        fn icon_path(path: impl Into<ImageSource>) -> Div {
+            div()
+                .flex()
+                .flex_row()
+                .items_center()
+                .justify_center()
+                .flex_none()
+                .child(Icon::from_path(path))
+        }
+
         let buttons = match self.list_type {
             ModListType::Active => {
                 vec![
                     // icon(IconName::Sort).id("sort"),
-                    icon(IconName::Save).id("save").on_click({
+                    icon_name(IconName::Save).id("save").on_click({
                         let project = self.project.clone();
                         move |_, _, cx| {
                             project.update(cx, |project, _| {
@@ -165,7 +175,7 @@ impl Render for ModList {
                                     // todo: highlight selected mod
                                     // todo: indicate if mod is incompatible with game version
                                     // todo: indicate if the mod has any load order conflicts
-                                    .child(icon(mod_meta.source.icon_name()))
+                                    .child(icon_name(mod_meta.source.icon_name()))
                                     .child(
                                         div()
                                             .flex()
@@ -176,10 +186,8 @@ impl Render for ModList {
                                             .w_6()
                                             .child({
                                                 match fs::metadata(mod_meta.icon_file_path()) {
-                                                    Ok(_) => img(mod_meta.icon_file_path())
-                                                        .max_h_full()
-                                                        .into_any(),
-                                                    Err(_) => icon(IconName::Unknown).into_any(),
+                                                    Ok(_) => icon_path(mod_meta.icon_file_path()),
+                                                    Err(_) => icon_name(IconName::Unknown),
                                                 }
                                             }),
                                     )
