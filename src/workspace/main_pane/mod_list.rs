@@ -6,9 +6,9 @@ use gpui::{
 };
 
 use crate::{
-    icon::{Icon, IconName},
     project::Project,
     theme::colours,
+    ui::icon::{Icon, IconName},
 };
 
 // todo: add list actions for refresh / sort etc
@@ -136,7 +136,7 @@ impl Render for ModList {
                                     .flex()
                                     .flex_row()
                                     .items_center()
-                                    .gap_1()
+                                    .gap_0p5()
                                     .px_2()
                                     .text_overflow(TextOverflow::Ellipsis("..."))
                                     .on_click({

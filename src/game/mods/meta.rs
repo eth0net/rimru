@@ -8,7 +8,7 @@ use xml::reader::{EventReader, XmlEvent as ReaderEvent};
 
 use crate::{
     game::{paths, xml::*},
-    icon::IconName,
+    ui::icon::IconName,
 };
 
 #[derive(Debug, Clone, Default)]
