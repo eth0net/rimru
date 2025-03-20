@@ -1,6 +1,6 @@
 use std::{fmt::Display, fs};
 
-use gpui::{Entity, MouseButton, TextOverflow, relative, uniform_list};
+use gpui::{Entity, MouseButton, relative, uniform_list};
 
 use crate::{project::Project, theme::colors, ui::prelude::*};
 
@@ -125,8 +125,8 @@ impl Render for ModList {
                                     .flex()
                                     .flex_row()
                                     .items_center()
+                                    .w_full()
                                     .px_2()
-                                    .text_overflow(TextOverflow::Ellipsis("..."))
                                     .on_click({
                                         let mod_meta = mod_meta.clone();
                                         let project = project.clone();
@@ -180,7 +180,14 @@ impl Render for ModList {
                                         IconButton::new(SharedString::from(id), icon_source)
                                             .style(ButtonStyle::Transparent)
                                     })
-                                    .child(mod_name),
+                                    .child(
+                                        div()
+                                            .flex_grow()
+                                            .overflow_hidden()
+                                            .text_ellipsis()
+                                            .child(mod_name),
+                                    )
+                                    .child(div()),
                             );
                         }
                         items
