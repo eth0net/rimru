@@ -1,7 +1,7 @@
-use gpui::{Context, Decorations, IntoElement, Pixels, Window, div, prelude::*, px, rgb};
+use gpui::{Context, Decorations, IntoElement, Pixels, Window, div, prelude::*, px, rgba};
 use platforms::{PlatformStyle, macos};
 
-use crate::theme::{self, colours};
+use crate::theme::{self, colors};
 
 mod platforms;
 
@@ -38,16 +38,16 @@ impl Render for TitleBar {
         // todo(linux): implement window controls
         // let supported_controls = window.window_controls();
         let decorations = window.window_decorations();
-        let titlebar_colour = rgb(colours::TITLE_BAR_BACKGROUND);
-        // todo(linux): implement titlebar colour
-        // let titlebar_colour = if cfg!(any(target_os = "linux", target_os = "freebsd")) {
+        let titlebar_color = rgba(colors::TITLE_BAR_BACKGROUND);
+        // todo(linux): implement titlebar color
+        // let titlebar_color = if cfg!(any(target_os = "linux", target_os = "freebsd")) {
         //     if window.is_window_active() && !self.should_move {
-        //         rgb(colours::TITLE_BAR_BACKGROUND)
+        //         rgba(colors::TITLE_BAR_BACKGROUND)
         //     } else {
-        //         rgb(colours::TITLE_BAR_INACTIVE_BACKGROUND)
+        //         rgba(colors::TITLE_BAR_INACTIVE_BACKGROUND)
         //     }
         // } else {
-        //     rgb(colours::TITLE_BAR_BACKGROUND)
+        //     rgba(colors::TITLE_BAR_BACKGROUND)
         // };
 
         div()
@@ -72,9 +72,9 @@ impl Render for TitleBar {
                     // this border is to avoid a transparent gap in the rounded corners
                     .mt(px(-1.))
                     .border(px(1.))
-                    .border_color(titlebar_colour),
+                    .border_color(titlebar_color),
             })
-            .bg(titlebar_colour)
+            .bg(titlebar_color)
             .content_stretch()
             .child(
                 div()

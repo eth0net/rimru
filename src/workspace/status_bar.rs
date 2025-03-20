@@ -1,6 +1,6 @@
-use gpui::{Context, IntoElement, Pixels, Window, div, prelude::*, px, rgb};
+use gpui::{Context, IntoElement, Pixels, Window, div, prelude::*, px, rgba};
 
-use crate::theme::colours;
+use crate::theme::colors;
 
 pub struct StatusBar;
 
@@ -29,7 +29,7 @@ impl Render for StatusBar {
             .items_center()
             .p_2()
             .border_t_1()
-            .border_color(rgb(colours::BORDER))
+            .border_color(rgba(colors::BORDER))
             .text_sm()
             .child("status bar is wip".to_string())
     }

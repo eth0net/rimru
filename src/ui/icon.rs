@@ -1,9 +1,6 @@
-use gpui::{
-    App, Hsla, ImageSource, IntoElement, Rems, RenderOnce, SharedString, Styled, Window, img, rems,
-    rgb, svg,
-};
+use gpui::{ImageSource, img, svg};
 
-use crate::theme::colours;
+use crate::{theme::colors, ui::prelude::*};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IconName {
@@ -86,31 +83,30 @@ where
 
 #[derive(IntoElement)]
 pub struct Icon {
-    format: IconSource,
-    colour: Hsla,
+    source: IconSource,
+    color: Hsla,
     size: Rems,
 }
 
 impl Icon {
-    pub fn new(icon: IconName) -> Self {
+    pub fn new(icon: IconSource) -> Self {
         Icon {
-            format: icon.into(),
-            colour: rgb(colours::TEXT).into(),
+            source: icon,
+            color: rgba(colors::TEXT).into(),
             size: IconSize::default().rems(),
         }
+    }
+
+    pub fn from_name(name: IconName) -> Self {
+        Icon::new(name.into())
     }
 
     pub fn from_path(path: impl Into<ImageSource>) -> Self {
-        let path = path.into();
-        Icon {
-            format: path.into(),
-            colour: rgb(colours::TEXT).into(),
-            size: IconSize::default().rems(),
-        }
+        Icon::new(path.into().into())
     }
 
-    pub fn colour(mut self, colour: impl Into<Hsla>) -> Self {
-        self.colour = colour.into();
+    pub fn color(mut self, color: impl Into<Hsla>) -> Self {
+        self.color = color.into();
         self
     }
 
@@ -122,18 +118,18 @@ impl Icon {
 
 impl From<IconName> for Icon {
     fn from(icon: IconName) -> Self {
-        Icon::new(icon)
+        Icon::from_name(icon)
     }
 }
 
 impl RenderOnce for Icon {
     fn render(self, _: &mut Window, _: &mut App) -> impl IntoElement {
-        match self.format {
+        match self.source {
             IconSource::Svg(path) => svg()
                 .size(self.size)
                 .flex_none()
                 .path(path)
-                .text_color(self.colour)
+                .text_color(self.color)
                 .into_any_element(),
             IconSource::Img(path) => img(path).size(self.size).flex_none().into_any_element(),
         }

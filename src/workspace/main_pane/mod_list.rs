@@ -1,15 +1,8 @@
 use std::{fmt::Display, fs};
 
-use gpui::{
-    Context, Div, Entity, ImageSource, IntoElement, MouseButton, SharedString, TextOverflow,
-    Window, div, prelude::*, relative, rgb, uniform_list,
-};
+use gpui::{Entity, MouseButton, TextOverflow, relative, uniform_list};
 
-use crate::{
-    project::Project,
-    theme::colours,
-    ui::icon::{Icon, IconName},
-};
+use crate::{project::Project, theme::colors, ui::prelude::*};
 
 // todo: add list actions for refresh / sort etc
 pub struct ModList {
@@ -36,37 +29,18 @@ impl Render for ModList {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let project = self.project.clone();
         let list_name = SharedString::from(self.list_type.to_string());
+
         // todo: move this to callback?
         let mods = project.read_with(cx, |project, _| match self.list_type {
             ModListType::Active => project.active_mods(),
             ModListType::Inactive => project.inactive_mods(),
         });
 
-        fn icon_name(icon: IconName) -> Div {
-            div()
-                .flex()
-                .flex_row()
-                .items_center()
-                .justify_center()
-                .flex_none()
-                .child(Icon::new(icon))
-        }
-
-        fn icon_path(path: impl Into<ImageSource>) -> Div {
-            div()
-                .flex()
-                .flex_row()
-                .items_center()
-                .justify_center()
-                .flex_none()
-                .child(Icon::from_path(path))
-        }
-
         let buttons = match self.list_type {
             ModListType::Active => {
                 vec![
-                    // icon(IconName::Sort).id("sort"),
-                    icon_name(IconName::Save).id("save").on_click({
+                    // IconButton::from_name("sort", IconName::Sort),
+                    IconButton::from_name("save", IconName::Save).on_click({
                         let project = self.project.clone();
                         move |_, _, cx| {
                             project.update(cx, |project, _| {
@@ -74,11 +48,11 @@ impl Render for ModList {
                             });
                         }
                     }),
-                    // icon(IconName::Reset).id("reset"),
+                    // IconButton::from_name("reset", IconName::Reset),
                 ]
             }
             ModListType::Inactive => vec![
-                // icon(IconName::Refresh).id("refresh"),
+                // IconButton::from_name("refresh", IconName::Refresh),
             ],
         };
 
@@ -88,7 +62,7 @@ impl Render for ModList {
             .h_full()
             .w(relative(0.3))
             .border_r_1()
-            .border_color(rgb(colours::BORDER))
+            .border_color(rgba(colors::BORDER))
             .text_sm()
             .child(
                 div()
@@ -175,7 +149,13 @@ impl Render for ModList {
                                     // todo: highlight selected mod
                                     // todo: indicate if mod is incompatible with game version
                                     // todo: indicate if the mod has any load order conflicts
-                                    .child(icon_name(mod_meta.source.icon_name()))
+                                    .child(
+                                        IconButton::from_name(
+                                            SharedString::from(format!("{mod_name}-icon")),
+                                            mod_meta.source.icon_name(),
+                                        )
+                                        .style(ButtonStyle::Transparent),
+                                    )
                                     .child(
                                         div()
                                             .flex()
@@ -185,10 +165,14 @@ impl Render for ModList {
                                             .h_6()
                                             .w_6()
                                             .child({
-                                                match fs::metadata(mod_meta.icon_file_path()) {
-                                                    Ok(_) => icon_path(mod_meta.icon_file_path()),
-                                                    Err(_) => icon_name(IconName::Unknown),
-                                                }
+                                                let id = format!("{mod_name}-icon");
+                                                let icon_path = mod_meta.icon_file_path();
+                                                let icon_source = match fs::metadata(&icon_path) {
+                                                    Ok(_) => icon_path.into(),
+                                                    Err(_) => IconName::Unknown.into(),
+                                                };
+                                                IconButton::new(SharedString::from(id), icon_source)
+                                                    .style(ButtonStyle::Transparent)
                                             }),
                                     )
                                     .child(mod_name),

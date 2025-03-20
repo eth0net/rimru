@@ -1,7 +1,7 @@
 use gpui::{
     App, Bounds, Context, CursorStyle, Decorations, Div, Entity, Global, Hsla, IntoElement,
     MouseButton, Pixels, Point, ResizeEdge, Size, Stateful, Tiling, Window, canvas, div, point,
-    prelude::*, px, rgb, size, transparent_black,
+    prelude::*, px, rgba, size, transparent_black,
 };
 use main_pane::MainPane;
 use status_bar::StatusBar;
@@ -10,7 +10,7 @@ use title_bar::TitleBar;
 use crate::{
     project::Project,
     settings::Settings,
-    theme::{self, colours},
+    theme::{self, colors},
 };
 
 mod main_pane;
@@ -58,12 +58,12 @@ impl Render for Workspace {
                 .gap_0()
                 .justify_start()
                 .items_start()
-                .text_color(rgb(colours::TEXT))
+                .text_color(rgba(colors::TEXT))
                 .overflow_hidden()
                 .child(self.title_bar.clone())
                 .child(
                     div()
-                        .bg(rgb(colours::BACKGROUND))
+                        .bg(rgba(colors::BACKGROUND))
                         .relative()
                         .flex_1()
                         .w_full()
@@ -72,7 +72,7 @@ impl Render for Workspace {
                         .overflow_hidden()
                         .border_t_1()
                         .border_b_1()
-                        .border_color(rgb(colours::BORDER))
+                        .border_color(rgba(colors::BORDER))
                         .child(self.main_pane.clone())
                         .child(self.status_bar.clone()),
                 ),
@@ -169,7 +169,7 @@ pub fn client_side_decorations(
                 .map(|div| match decorations {
                     Decorations::Server => div,
                     Decorations::Client { tiling } => div
-                        .border_color(rgb(colours::BORDER))
+                        .border_color(rgba(colors::BORDER))
                         .when(!(tiling.top || tiling.right), |div| {
                             div.rounded_tr(theme::CLIENT_SIDE_DECORATION_ROUNDING)
                         })

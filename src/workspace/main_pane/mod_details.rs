@@ -1,6 +1,6 @@
-use gpui::{Context, Entity, IntoElement, Window, div, img, prelude::*, relative, rgb};
+use gpui::{Context, Entity, IntoElement, Window, div, img, prelude::*, relative, rgba};
 
-use crate::{project::Project, theme::colours};
+use crate::{project::Project, theme::colors};
 
 pub struct ModDetails {
     project: Entity<Project>,
@@ -53,7 +53,7 @@ impl Render for ModDetails {
                                 .justify_center()
                                 .w_full()
                                 .border_1()
-                                .border_color(rgb(colours::BORDER))
+                                .border_color(rgba(colors::BORDER))
                                 .child({
                                     // todo: optimise image loading
                                     let image_path = mod_meta.preview_file_path();
@@ -69,7 +69,7 @@ impl Render for ModDetails {
                                 .flex()
                                 .flex_col()
                                 .text_sm()
-                                .text_color(rgb(colours::TEXT_SECONDARY))
+                                .text_color(rgba(colors::TEXT_SECONDARY))
                                 .child(
                                     div()
                                         .flex()
