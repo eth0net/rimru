@@ -44,15 +44,32 @@ impl Render for ModList {
                         let project = self.project.clone();
                         move |_, _, cx| {
                             project.update(cx, |project, _| {
-                                project.save_mod_config();
+                                project.save_mods_config();
                             });
                         }
                     }),
-                    // IconButton::from_name("reset", IconName::Reset),
+                    IconButton::from_name("reset", IconName::Reset).on_click({
+                        let project = self.project.clone();
+                        move |_, _, cx| {
+                            project.update(cx, |project, _| {
+                                project.apply_mods_config();
+                            });
+                        }
+                    }),
+                    IconButton::from_name("reload", IconName::Reload).on_click({
+                        let project = self.project.clone();
+                        move |_, _, cx| {
+                            project.update(cx, |project, _| {
+                                project.load_mods_config();
+                                project.apply_mods_config();
+                            });
+                        }
+                    }),
+                    // todo: add clear?
                 ]
             }
             ModListType::Inactive => vec![
-                // IconButton::from_name("refresh", IconName::Refresh),
+                // IconButton::from_name("reload", IconName::Reload),
             ],
         };
 
@@ -87,8 +104,6 @@ impl Render for ModList {
                             .flex_row()
                             .justify_center()
                             .items_center()
-                            .gap_1()
-                            .text_xs()
                             .children(buttons),
                     ),
             )
@@ -110,7 +125,6 @@ impl Render for ModList {
                                     .flex()
                                     .flex_row()
                                     .items_center()
-                                    .gap_0p5()
                                     .px_2()
                                     .text_overflow(TextOverflow::Ellipsis("..."))
                                     .on_click({
@@ -156,25 +170,16 @@ impl Render for ModList {
                                         )
                                         .style(ButtonStyle::Transparent),
                                     )
-                                    .child(
-                                        div()
-                                            .flex()
-                                            .flex_row()
-                                            .items_center()
-                                            .justify_center()
-                                            .h_6()
-                                            .w_6()
-                                            .child({
-                                                let id = format!("{mod_name}-icon");
-                                                let icon_path = mod_meta.icon_file_path();
-                                                let icon_source = match fs::metadata(&icon_path) {
-                                                    Ok(_) => icon_path.into(),
-                                                    Err(_) => IconName::Unknown.into(),
-                                                };
-                                                IconButton::new(SharedString::from(id), icon_source)
-                                                    .style(ButtonStyle::Transparent)
-                                            }),
-                                    )
+                                    .child({
+                                        let id = format!("{mod_name}-icon");
+                                        let icon_path = mod_meta.icon_file_path();
+                                        let icon_source = match fs::metadata(&icon_path) {
+                                            Ok(_) => icon_path.into(),
+                                            Err(_) => IconName::Unknown.into(),
+                                        };
+                                        IconButton::new(SharedString::from(id), icon_source)
+                                            .style(ButtonStyle::Transparent)
+                                    })
                                     .child(mod_name),
                             );
                         }

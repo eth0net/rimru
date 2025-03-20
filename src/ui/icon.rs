@@ -5,7 +5,7 @@ use crate::{theme::colors, ui::prelude::*};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IconName {
     // Actions
-    Refresh,
+    Reload,
     Reset,
     Save,
     Sort,
@@ -19,7 +19,7 @@ pub enum IconName {
 impl IconName {
     pub fn path(&self) -> &'static str {
         match self {
-            IconName::Refresh => "icons/folder-sync.svg",
+            IconName::Reload => "icons/folder-sync.svg",
             IconName::Reset => "icons/list-restart.svg",
             IconName::Save => "icons/save.svg",
             IconName::Sort => "icons/arrow-up-down.svg",

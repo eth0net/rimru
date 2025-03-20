@@ -39,23 +39,56 @@ impl Project {
 
         project.load_mods_config();
         project.load_mods(cx);
+        project.apply_mods_config();
         project
     }
 
-    fn load_mods_config(&mut self) {
+    /// Load mods configuration from file.
+    ///
+    /// This function parses the mods configuration from game files and updates the project.
+    pub fn load_mods_config(&mut self) {
         log::debug!("loading mods config");
         match ModsConfigData::load() {
             Some(config) => {
-                self.active_mods = config.active_mods.clone();
                 self.mods_config = Some(config);
             }
             None => {
                 log::warn!("no mods config found");
+            }
+        }
+    }
+
+    /// Apply the loaded mods configuration.
+    ///
+    /// This function updates the active mods list based on the loaded configuration.
+    pub fn apply_mods_config(&mut self) {
+        log::debug!("applying mods config");
+        match self.mods_config {
+            Some(ref config) => {
+                self.active_mods = config.active_mods.clone();
+            }
+            None => {
+                log::warn!("no mods config loaded");
                 self.active_mods = Vec::new();
             }
         }
     }
 
+    /// Save mods configuration to file.
+    ///
+    /// This function updates the mods configuration file with the current active mods list.
+    pub fn save_mods_config(&mut self) {
+        match &mut self.mods_config {
+            Some(mods_config) => {
+                log::info!("saving mods config");
+                mods_config.active_mods = self.active_mods.clone();
+                mods_config.save()
+            }
+            None => {
+                log::error!("no mods config to save");
+            }
+        }
+    }
     fn load_mods(&mut self, cx: &mut Context<Self>) {
         log::debug!("loading mods");
 
@@ -197,19 +230,6 @@ impl Project {
             None => {
                 self.active_mods.push(mod_meta.id.to_ascii_lowercase());
                 log::info!("activated mod: {}", mod_meta.id);
-            }
-        }
-    }
-
-    pub fn save_mod_config(&mut self) {
-        match &mut self.mods_config {
-            Some(mods_config) => {
-                log::info!("saving mods config");
-                mods_config.active_mods = self.active_mods.clone();
-                mods_config.save()
-            }
-            None => {
-                log::error!("no mods config to save");
             }
         }
     }
