@@ -201,10 +201,11 @@ impl Project {
         }
     }
 
-    pub fn save_mod_config(&self) {
-        match &self.mods_config {
+    pub fn save_mod_config(&mut self) {
+        match &mut self.mods_config {
             Some(mods_config) => {
                 log::info!("saving mods config");
+                mods_config.active_mods = self.active_mods.clone();
                 mods_config.save()
             }
             None => {
