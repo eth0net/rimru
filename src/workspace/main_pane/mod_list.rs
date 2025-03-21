@@ -48,19 +48,19 @@ impl Render for ModList {
                             });
                         }
                     }),
-                    IconButton::from_name("reset", IconName::Reset).on_click({
-                        let project = self.project.clone();
-                        move |_, _, cx| {
-                            project.update(cx, |project, _| {
-                                project.apply_mods_config();
-                            });
-                        }
-                    }),
                     IconButton::from_name("reload", IconName::Reload).on_click({
                         let project = self.project.clone();
                         move |_, _, cx| {
                             project.update(cx, |project, _| {
                                 project.load_mods_config();
+                                project.apply_mods_config();
+                            });
+                        }
+                    }),
+                    IconButton::from_name("reset", IconName::Reset).on_click({
+                        let project = self.project.clone();
+                        move |_, _, cx| {
+                            project.update(cx, |project, _| {
                                 project.apply_mods_config();
                             });
                         }
