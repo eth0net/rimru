@@ -89,9 +89,14 @@ impl Project {
             }
         }
     }
-    fn load_mods(&mut self, cx: &mut Context<Self>) {
+
+    /// Load installed mods from mods directories.
+    ///
+    /// This function loads mods from the official mods directory, local mods directory, and Steam mods directory.
+    pub fn load_mods(&mut self, cx: &mut Context<Self>) {
         log::debug!("loading mods");
 
+        self.mods.clear();
         self.load_official_mods();
         self.load_local_mods(cx);
         self.load_steam_mods(cx);

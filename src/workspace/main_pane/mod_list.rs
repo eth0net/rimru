@@ -68,9 +68,16 @@ impl Render for ModList {
                     // todo: add clear?
                 ]
             }
-            ModListType::Inactive => vec![
-                // IconButton::from_name("reload", IconName::Reload),
-            ],
+            ModListType::Inactive => {
+                vec![IconButton::from_name("reload", IconName::Reload).on_click({
+                    let project = self.project.clone();
+                    move |_, _, cx| {
+                        project.update(cx, |project, cx| {
+                            project.load_mods(cx);
+                        });
+                    }
+                })]
+            }
         };
 
         div()
