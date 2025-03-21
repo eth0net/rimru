@@ -238,4 +238,9 @@ impl Project {
             }
         }
     }
+
+    pub fn clear_active_mods(&mut self) {
+        log::info!("clearing active mods");
+        self.active_mods.clear();
+    }
 }

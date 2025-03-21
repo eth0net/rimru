@@ -65,7 +65,14 @@ impl Render for ModList {
                             });
                         }
                     }),
-                    // todo: add clear?
+                    IconButton::from_name("clear", IconName::Clear).on_click({
+                        let project = self.project.clone();
+                        move |_, _, cx| {
+                            project.update(cx, |project, _| {
+                                project.clear_active_mods();
+                            });
+                        }
+                    }),
                 ]
             }
             ModListType::Inactive => {
