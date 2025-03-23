@@ -1,11 +1,9 @@
 use gpui::{Context, Entity, IntoElement, Window, div, prelude::*};
-use mod_details::ModDetails;
-use mod_list::ModList;
 
-use crate::project::Project;
-
-mod mod_details;
-mod mod_list;
+use crate::{
+    project::Project,
+    ui::{ModDetails, ModList},
+};
 
 pub struct MainPane {
     // todo: subscribe to project changes

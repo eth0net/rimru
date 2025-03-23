@@ -1,8 +1,6 @@
-mod button;
-mod icon;
+mod components;
 pub mod prelude;
 mod traits;
 
-pub use button::*;
-pub use icon::*;
+pub use components::*;
 pub use prelude::*;
