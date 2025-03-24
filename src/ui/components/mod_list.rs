@@ -30,7 +30,9 @@ impl ModList {
         }
     }
 
-    fn render_header(&mut self) -> Div {
+    fn render_header(&mut self, cx: &mut Context<Self>) -> Div {
+        let mods = self.mods_for_list_type(cx);
+
         let buttons = match self.list_type {
             ModListType::Active => {
                 vec![
@@ -95,15 +97,16 @@ impl ModList {
                     .flex()
                     .flex_row()
                     .justify_center()
-                    .items_center()
-                    .child(self.list_name.clone()),
+                    .items_start()
+                    .pt_0p5()
+                    .child(format!("{} ({})", self.list_name, mods.len())),
             )
             .child(
                 div()
                     .flex()
                     .flex_row()
                     .justify_center()
-                    .items_center()
+                    .items_start()
                     .children(buttons),
             )
     }
@@ -216,7 +219,7 @@ impl Render for ModList {
             .border_r_1()
             .border_color(rgba(colors::BORDER))
             .text_sm()
-            .child(self.render_header())
+            .child(self.render_header(cx))
             .child(self.render_list(cx))
     }
 }
