@@ -15,16 +15,16 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Project {
-    // rimru settings
-    pub settings: Entity<Settings>,
-    // mods configuration loaded from the game
-    pub mods_config: Option<ModsConfigData>,
-    // list of all installed mods (local and steam)
-    pub mods: Vec<ModMetaData>,
-    // list of active mod ids, sourced from the config or save file
-    pub active_mods: Vec<String>,
-    // current selected mod in rimru
-    pub selected_mod: Option<ModMetaData>,
+    /// rimru settings
+    settings: Entity<Settings>,
+    /// mods configuration loaded from the game
+    mods_config: Option<ModsConfigData>,
+    /// list of all installed mods (local and steam)
+    mods: Vec<ModMetaData>,
+    /// list of active mod ids, sourced from the config or save file
+    active_mods: Vec<String>,
+    /// current selected mod in rimru
+    selected_mod: Option<ModMetaData>,
 }
 
 impl Project {
