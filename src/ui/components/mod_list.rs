@@ -1,8 +1,8 @@
 use std::{fmt::Display, fs};
 
-use gpui::{Entity, MouseButton, UniformList, prelude::*, relative, uniform_list};
+use gpui::{Entity, MouseButton, Stateful, UniformList, prelude::*, relative, uniform_list};
 
-use crate::{project::Project, theme::colors, ui::prelude::*};
+use crate::{game::mods::meta::ModMetaData, project::Project, theme::colors, ui::prelude::*};
 
 // todo: add list actions for refresh / sort etc
 pub struct ModList {
@@ -110,97 +110,99 @@ impl ModList {
 
     // todo: add search bar to filter mods in this list
     // todo: preload images for visible mods in this list
-    fn render_list(&self, cx: &mut Context<'_, ModList>) -> UniformList {
-        let project = self.project.clone();
-        let list_name = self.list_name.clone();
-
-        let mods = project.read_with(cx, |project, _| match self.list_type {
-            ModListType::Active => project.active_mods(),
-            ModListType::Inactive => project.inactive_mods(),
-        });
-
-        uniform_list(cx.entity().clone(), list_name.clone(), mods.len(), {
-            move |_this, range, _window, _cx| {
-                let mut items = Vec::new();
+    fn render_list(&self, cx: &mut Context<Self>) -> UniformList {
+        let mods = self.mods_for_list_type(cx);
+        uniform_list(cx.entity().clone(), self.list_name.clone(), mods.len(), {
+            move |this, range, _window, _cx| {
+                let mut items = Vec::with_capacity(range.end - range.start);
                 for ix in range {
-                    let mod_meta = mods[ix].clone();
-                    let mod_name = mod_meta.name.clone();
-                    items.push(
-                        div()
-                            .id((list_name.clone(), ix))
-                            .cursor_pointer()
-                            .flex()
-                            .flex_row()
-                            .items_center()
-                            .w_full()
-                            .px_2()
-                            .on_click({
-                                let mod_meta = mod_meta.clone();
-                                let project = project.clone();
-                                move |event, _window, cx| match event.down.button {
-                                    MouseButton::Left => match event.down.click_count {
-                                        1 => {
-                                            log::debug!("select {mod_meta:?}");
-                                            project.update(cx, {
-                                                let mod_meta = mod_meta.clone();
-                                                move |project, _| {
-                                                    project.select_mod(&mod_meta);
-                                                }
-                                            });
-                                        }
-                                        2 => {
-                                            log::debug!("toggle {mod_meta:?}");
-                                            project.update(cx, {
-                                                let mod_meta = mod_meta.clone();
-                                                move |project, _| {
-                                                    project.toggle_mod(&mod_meta);
-                                                }
-                                            });
-                                        }
-                                        _ => {}
-                                    },
-                                    MouseButton::Right => {
-                                        log::debug!("context menu {mod_meta:?}");
-                                    }
-                                    _ => {
-                                        log::debug!("unhandled click {mod_meta:?}")
-                                    }
-                                }
-                            })
-                            // todo: highlight selected mod
-                            .child(
-                                IconButton::from_name(
-                                    SharedString::from(format!("{mod_name}-icon")),
-                                    mod_meta.source.icon_name(),
-                                )
-                                .style(ButtonStyle::Transparent),
-                            )
-                            .child({
-                                let id = format!("{mod_name}-icon");
-                                let icon_path = mod_meta.icon_file_path();
-                                let icon_source = match fs::metadata(&icon_path) {
-                                    Ok(_) => icon_path.into(),
-                                    Err(_) => IconName::Unknown.into(),
-                                };
-                                IconButton::new(SharedString::from(id), icon_source)
-                                    .style(ButtonStyle::Transparent)
-                            })
-                            .child(
-                                div()
-                                    .flex_grow()
-                                    .overflow_hidden()
-                                    .text_ellipsis()
-                                    .child(mod_name),
-                            )
-                            // todo: indicate if mod is incompatible with game version
-                            // todo: indicate if the mod has any load order conflicts
-                            .child(div()),
-                    );
+                    items.push(this.render_entry(&mods[ix]));
                 }
                 items
             }
         })
         .flex_grow()
+    }
+
+    fn render_entry(&self, mod_meta: &ModMetaData) -> Stateful<Div> {
+        let id = SharedString::from(format!("{}-{}", self.list_name, mod_meta.id));
+        let mod_name = mod_meta.name.clone();
+        div()
+            .id(id)
+            .cursor_pointer()
+            .flex()
+            .flex_row()
+            .items_center()
+            .w_full()
+            .px_2()
+            .on_click({
+                let mod_meta = mod_meta.clone();
+                let project = self.project.clone();
+                move |event, _window, cx| match event.down.button {
+                    MouseButton::Left => match event.down.click_count {
+                        1 => {
+                            log::debug!("select {mod_meta:?}");
+                            project.update(cx, {
+                                let mod_meta = mod_meta.clone();
+                                move |project, _| {
+                                    project.select_mod(&mod_meta);
+                                }
+                            });
+                        }
+                        2 => {
+                            log::debug!("toggle {mod_meta:?}");
+                            project.update(cx, {
+                                let mod_meta = mod_meta.clone();
+                                move |project, _| {
+                                    project.toggle_mod(&mod_meta);
+                                }
+                            });
+                        }
+                        _ => {}
+                    },
+                    MouseButton::Right => {
+                        log::debug!("context menu {mod_meta:?}");
+                    }
+                    _ => {
+                        log::debug!("unhandled click {mod_meta:?}")
+                    }
+                }
+            })
+            // todo: highlight selected mod
+            .child(
+                IconButton::from_name(
+                    SharedString::from(format!("{mod_name}-icon")),
+                    mod_meta.source.icon_name(),
+                )
+                .style(ButtonStyle::Transparent),
+            )
+            .child({
+                let id = format!("{mod_name}-icon");
+                let icon_path = mod_meta.icon_file_path();
+                let icon_source = match fs::metadata(&icon_path) {
+                    Ok(_) => icon_path.into(),
+                    Err(_) => IconName::Unknown.into(),
+                };
+                IconButton::new(SharedString::from(id), icon_source).style(ButtonStyle::Transparent)
+            })
+            .child(
+                div()
+                    .flex_grow()
+                    .overflow_hidden()
+                    .text_ellipsis()
+                    .child(mod_name),
+            )
+            // todo: indicate if mod is incompatible with game version
+            // todo: indicate if the mod has any load order conflicts
+            .child(div())
+    }
+
+    fn mods_for_list_type(&self, cx: &mut Context<Self>) -> Vec<ModMetaData> {
+        self.project
+            .read_with(cx, |project, _| match self.list_type {
+                ModListType::Active => project.active_mods(),
+                ModListType::Inactive => project.inactive_mods(),
+            })
     }
 }
 
