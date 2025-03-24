@@ -54,58 +54,17 @@ impl Render for ModDetails {
                                     img(image_path).max_h_full().max_w_full()
                                 }),
                         )
-                        .child(
-                            div()
-                                .flex()
-                                .flex_row()
-                                .justify_start()
-                                .items_start()
-                                .child(
-                                    IconButton::from_name(
-                                        SharedString::from(format!("{}-source", mod_meta.name)),
-                                        mod_meta.source.icon_name(),
-                                    )
-                                    .style(ButtonStyle::Transparent),
-                                )
-                                .child({
-                                    let id = format!("{}-icon", mod_meta.name);
-                                    let icon_path = mod_meta.icon_file_path();
-                                    let icon_source = match fs::metadata(&icon_path) {
-                                        Ok(_) => icon_path.into(),
-                                        Err(_) => IconName::Unknown.into(),
-                                    };
-                                    IconButton::new(SharedString::from(id), icon_source)
-                                        .style(ButtonStyle::Transparent)
-                                })
-                                .child(mod_meta.name.clone()),
-                        )
+                        .child(mod_meta.name.clone())
                         .child(
                             div()
                                 .flex()
                                 .flex_col()
                                 .text_sm()
                                 .text_color(rgba(colors::TEXT_SECONDARY))
-                                .child(
-                                    div()
-                                        .flex()
-                                        .flex_row()
-                                        .justify_start()
-                                        .items_center()
-                                        .gap_2()
-                                        .child(format!("[ id: {} ]", mod_meta.id.clone()))
-                                        .when_some(
-                                            mod_meta.steam_app_id.clone(),
-                                            |this, steam_app_id| {
-                                                this.child(format!("[ steam: {} ]", steam_app_id))
-                                            },
-                                        ),
-                                )
-                                .child(
-                                    div()
-                                        .child(format!("Authors: {}", mod_meta.authors.join(", "))),
-                                ),
+                                .child(mod_meta.id.clone())
+                                .child(format!("Authors: {}", mod_meta.authors.join(", "))),
                         )
-                        .child(div().child(mod_meta.description.clone()))
+                        .child(mod_meta.description.clone())
                     }),
             )
     }
