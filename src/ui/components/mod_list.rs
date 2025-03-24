@@ -116,10 +116,10 @@ impl ModList {
     fn render_list(&self, cx: &mut Context<Self>) -> UniformList {
         let mods = self.mods_for_list_type(cx);
         uniform_list(cx.entity().clone(), self.list_name.clone(), mods.len(), {
-            move |this, range, _window, _cx| {
+            move |this, range, _, cx| {
                 let mut items = Vec::with_capacity(range.end - range.start);
                 for ix in range {
-                    items.push(this.render_entry(&mods[ix]));
+                    items.push(this.render_entry(&mods[ix], cx));
                 }
                 items
             }
@@ -127,9 +127,16 @@ impl ModList {
         .flex_grow()
     }
 
-    fn render_entry(&self, mod_meta: &ModMetaData) -> Stateful<Div> {
+    fn render_entry(&self, mod_meta: &ModMetaData, cx: &mut Context<Self>) -> Stateful<Div> {
+        let project = self.project.read(cx);
+
         let id = SharedString::from(format!("{}-{}", self.list_name, mod_meta.id));
         let mod_name = mod_meta.name.clone();
+
+        let is_selected = project
+            .selected_mod()
+            .is_some_and(|selected| selected.id == mod_meta.id);
+
         div()
             .id(id)
             .cursor_pointer()
@@ -138,6 +145,10 @@ impl ModList {
             .items_center()
             .w_full()
             .px_2()
+            .border_1()
+            .when(is_selected, |this| {
+                this.border_color(rgba(colors::BORDER_FOCUSED))
+            })
             .on_click({
                 let mod_meta = mod_meta.clone();
                 let project = self.project.clone();
@@ -171,7 +182,6 @@ impl ModList {
                     }
                 }
             })
-            // todo: highlight selected mod
             .child(
                 IconButton::from_name(
                     SharedString::from(format!("{mod_name}-source")),
