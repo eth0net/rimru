@@ -1,6 +1,6 @@
 use std::{fmt::Display, fs};
 
-use gpui::{Entity, MouseButton, Stateful, UniformList, prelude::*, relative, uniform_list};
+use gpui::{Entity, MouseButton, Stateful, UniformList, relative, uniform_list};
 
 use crate::{game::mods::meta::ModMetaData, project::Project, theme::colors, ui::prelude::*};
 
@@ -174,7 +174,7 @@ impl ModList {
             // todo: highlight selected mod
             .child(
                 IconButton::from_name(
-                    SharedString::from(format!("{mod_name}-icon")),
+                    SharedString::from(format!("{mod_name}-source")),
                     mod_meta.source.icon_name(),
                 )
                 .style(ButtonStyle::Transparent),

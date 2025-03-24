@@ -1,8 +1,8 @@
-use gpui::{Context, Entity, IntoElement, Window, div, prelude::*};
+use gpui::Entity;
 
 use crate::{
     project::Project,
-    ui::{ModDetails, ModList},
+    ui::{ModDetails, ModList, prelude::*},
 };
 
 pub struct MainPane {
