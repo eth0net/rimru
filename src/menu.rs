@@ -7,6 +7,7 @@ pub fn init(cx: &mut App) {
 }
 
 fn menus() -> Vec<Menu> {
+    // todo: add mods menu with list actions
     vec![Menu {
         name: "Rimru".into(),
         items: vec![
