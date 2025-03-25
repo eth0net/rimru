@@ -34,9 +34,9 @@ pub trait ButtonCommon: Clickable + Disableable {
     fn tooltip(self, tooltip: impl Fn(&mut Window, &mut App) -> AnyView + 'static) -> Self;
 }
 
-pub type TooltipFunc = Box<dyn Fn(&mut Window, &mut App) -> AnyView>;
+type TooltipFunc = Box<dyn Fn(&mut Window, &mut App) -> AnyView>;
 
-pub type OnClickFunc = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
+type OnClickFunc = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 
 #[derive(IntoElement)]
 pub struct ButtonLike {

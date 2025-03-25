@@ -3,13 +3,7 @@ use std::{fs::read_dir, path::PathBuf};
 use gpui::{Context, Entity};
 
 use crate::{
-    game::{
-        mods::{
-            config::ModsConfigData,
-            meta::{ModMetaData, Source},
-        },
-        paths,
-    },
+    game::{mods::*, paths},
     settings::Settings,
 };
 

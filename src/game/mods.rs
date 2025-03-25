@@ -1,2 +1,5 @@
-pub mod config;
-pub mod meta;
+mod config;
+mod meta;
+
+pub use config::*;
+pub use meta::*;
