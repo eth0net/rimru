@@ -20,11 +20,13 @@ pub mod colors {
     pub const ELEMENT_ACTIVE: u32 = 0x6e768166;
     pub const ELEMENT_BACKGROUND: u32 = 0x3e547166;
     pub const ELEMENT_DISABLED: u32 = 0xfefef31b;
+    pub const ELEMENT_HOVER: u32 = 0x6e768166;
     pub const ELEMENT_SELECTED: u32 = 0x6e768166;
     pub const GHOST_ELEMENT_ACTIVE: u32 = 0x6e76811a;
     pub const GHOST_ELEMENT_BACKGROUND: u32 = 0x0000000000;
     pub const GHOST_ELEMENT_DISABLED: u32 = 0x2a2a28ff;
     pub const GHOST_ELEMENT_HOVER: u32 = 0x6e76811a;
+    pub const DROP_TARGET_BACKGROUND: u32 = 0x008ff519;
     // pub const ELEVATED_SURFACE_BACKGROUND: u32 = 0x161b22ff;
     // pub const SURFACE_BACKGROUND: u32 = 0x010409ff;
     pub const INFO_BACKGROUND: u32 = 0x3b9effff;

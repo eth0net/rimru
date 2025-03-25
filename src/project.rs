@@ -1,5 +1,6 @@
 use std::{fs::read_dir, path::PathBuf};
 
+use anyhow::Context as _;
 use gpui::{Context, Entity};
 
 use crate::{
@@ -7,6 +8,7 @@ use crate::{
     settings::Settings,
 };
 
+// todo: pls cache the mod lists
 #[derive(Debug, Clone)]
 pub struct Project {
     /// rimru settings
@@ -231,6 +233,37 @@ impl Project {
                 log::info!("activated mod: {}", mod_meta.id);
             }
         }
+    }
+
+    pub fn move_active_mod(&mut self, source: String, target: String) -> anyhow::Result<()> {
+        log::debug!("moving mod {source} to {target}");
+        if source == target {
+            return Ok(());
+        }
+
+        let mut source_index = None;
+        let mut target_index = None;
+        for (i, mod_id) in self.active_mods.iter().enumerate() {
+            if mod_id.eq_ignore_ascii_case(&source) {
+                source_index = Some(i);
+                if target_index.is_some() {
+                    break;
+                }
+            }
+            if mod_id.eq_ignore_ascii_case(&target) {
+                target_index = Some(i);
+                if source_index.is_some() {
+                    break;
+                }
+            }
+        }
+
+        let source_index = source_index.with_context(|| "dragged mod is not active {source}")?;
+        let target_index = target_index.with_context(|| "target mod is not active {target}")?;
+
+        let moving = self.active_mods.remove(source_index);
+        self.active_mods.insert(target_index, moving);
+        Ok(())
     }
 
     pub fn clear_active_mods(&mut self) {

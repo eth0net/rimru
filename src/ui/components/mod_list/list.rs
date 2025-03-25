@@ -1,6 +1,8 @@
 use std::fmt::Display;
 
-use gpui::{Entity, MouseButton, UniformList, relative, uniform_list};
+use gpui::{
+    Entity, InteractiveElement, MouseButton, Pixels, Point, UniformList, px, relative, uniform_list,
+};
 
 use crate::{game::mods::ModMetaData, project::Project, theme::colors, ui::prelude::*};
 
@@ -113,6 +115,7 @@ impl ModList {
             )
     }
 
+    // todo: add sort by added, updated, name, id etc to inactive list
     // todo: add search bar to filter mods in this list
     // todo: preload images for visible mods in this list
     fn render_list(&self, cx: &mut Context<Self>) -> UniformList {
@@ -141,44 +144,70 @@ impl ModList {
 
         let id = SharedString::from(format!("{}-{}", self.list_name, mod_id));
 
-        ModListItem::new(id, mod_meta.clone())
-            .toggle_state(is_selected)
-            .on_click({
-                let mod_meta = mod_meta.clone();
-                let project = self.project.clone();
-                move |event, _, cx| {
-                    let mod_meta = mod_meta.read(cx);
-                    match event.down.button {
-                        MouseButton::Left => match event.down.click_count {
-                            1 => {
-                                log::debug!("select {mod_meta:?}");
-                                project.update(cx, {
-                                    let mod_meta = mod_meta.clone();
-                                    move |project, _| {
-                                        project.select_mod(&mod_meta);
-                                    }
-                                });
-                            }
-                            2 => {
-                                log::debug!("toggle {mod_meta:?}");
-                                project.update(cx, {
-                                    let mod_meta = mod_meta.clone();
-                                    move |project, _| {
-                                        project.toggle_mod(&mod_meta);
-                                    }
-                                });
-                            }
-                            _ => {}
-                        },
-                        MouseButton::Right => {
-                            log::debug!("context menu {mod_meta:?}");
-                        }
-                        _ => {
-                            log::debug!("unhandled click {mod_meta:?}")
-                        }
-                    }
-                }
+        let dragged_selection = DraggedSelection {
+            selected: mod_meta.read(cx).clone(),
+        };
+
+        div()
+            .id(id.clone())
+            .hover(|style| style.bg(rgba(colors::ELEMENT_HOVER)))
+            .on_drag(
+                dragged_selection,
+                move |selection, click_offset, _window, cx| {
+                    cx.new(|_| DraggedModListItemView {
+                        mod_meta: selection.selected.clone(),
+                        click_offset,
+                    })
+                },
+            )
+            .drag_over::<DraggedSelection>(move |style, _, _, _| {
+                style.bg(rgba(colors::DROP_TARGET_BACKGROUND))
             })
+            .on_drop({
+                cx.listener(move |this, selection: &DraggedSelection, _, cx| {
+                    this.drag_onto(selection, mod_id.clone(), cx);
+                })
+            })
+            .child(
+                ModListItem::new(id, mod_meta.clone())
+                    .toggle_state(is_selected)
+                    .on_click({
+                        let mod_meta = mod_meta.clone();
+                        let project = self.project.clone();
+                        move |event, _, cx| {
+                            let mod_meta = mod_meta.read(cx);
+                            match event.down.button {
+                                MouseButton::Left => match event.down.click_count {
+                                    1 => {
+                                        log::debug!("select {mod_meta:?}");
+                                        project.update(cx, {
+                                            let mod_meta = mod_meta.clone();
+                                            move |project, _| {
+                                                project.select_mod(&mod_meta);
+                                            }
+                                        });
+                                    }
+                                    2 => {
+                                        log::debug!("toggle {mod_meta:?}");
+                                        project.update(cx, {
+                                            let mod_meta = mod_meta.clone();
+                                            move |project, _| {
+                                                project.toggle_mod(&mod_meta);
+                                            }
+                                        });
+                                    }
+                                    _ => {}
+                                },
+                                MouseButton::Right => {
+                                    log::debug!("context menu {mod_meta:?}");
+                                }
+                                _ => {
+                                    log::debug!("unhandled click {mod_meta:?}")
+                                }
+                            }
+                        }
+                    }),
+            )
             .into_any_element()
     }
 
@@ -188,6 +217,22 @@ impl ModList {
                 ModListType::Active => project.active_mods(),
                 ModListType::Inactive => project.inactive_mods(),
             })
+    }
+
+    fn drag_onto(
+        &mut self,
+        selection: &DraggedSelection,
+        target_mod_id: String,
+        cx: &mut Context<Self>,
+    ) {
+        // move dragged mod to other side of target mod
+        let source = selection.selected.id.clone();
+        let target = target_mod_id.clone();
+        self.project.update(cx, |project, _| {
+            if let Err(e) = project.move_active_mod(source.clone(), target.clone()) {
+                log::error!("error moving {source} to {target}: {e}");
+            }
+        });
     }
 }
 
@@ -203,6 +248,39 @@ impl Render for ModList {
             .text_sm()
             .child(self.render_header(cx))
             .child(self.render_list(cx))
+    }
+}
+
+struct DraggedSelection {
+    selected: ModMetaData,
+}
+
+struct DraggedModListItemView {
+    mod_meta: ModMetaData,
+    click_offset: Point<Pixels>,
+}
+
+impl Render for DraggedModListItemView {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        div()
+            .flex()
+            .flex_row()
+            .items_center()
+            // .font(ui_font)
+            .pl(self.click_offset.x + px(12.))
+            .pt(self.click_offset.y + px(12.))
+            .child(
+                div()
+                    .flex()
+                    .gap_1()
+                    .items_center()
+                    .py_1()
+                    .px_2()
+                    .rounded_lg()
+                    .bg(rgba(colors::BACKGROUND))
+                    .text_color(rgba(colors::TEXT))
+                    .map(|this| this.child(self.mod_meta.name.clone())),
+            )
     }
 }
 
