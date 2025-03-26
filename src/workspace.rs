@@ -1,7 +1,6 @@
 use gpui::{
-    App, Bounds, Context, CursorStyle, Decorations, Div, Entity, Global, Hsla, IntoElement,
-    MouseButton, Pixels, Point, ResizeEdge, Size, Stateful, Tiling, Window, canvas, div, point,
-    prelude::*, px, rgba, size, transparent_black,
+    Bounds, CursorStyle, Decorations, Global, MouseButton, Pixels, Point, ResizeEdge, Size, Tiling,
+    canvas, point, px, size, transparent_black,
 };
 use main_pane::MainPane;
 use status_bar::StatusBar;
@@ -11,6 +10,7 @@ use crate::{
     project::Project,
     settings::Settings,
     theme::{self, colors},
+    ui::prelude::*,
 };
 
 mod main_pane;

@@ -3,8 +3,6 @@ use std::path::Path;
 
 use xml::reader::{EventReader, ParserConfig, XmlEvent as ReaderEvent};
 
-// todo: probably refactor this and wrap events etc
-
 pub type ParseResult<T> = Result<T, String>;
 
 pub fn create_reader<R: Read>(reader: R) -> EventReader<R> {
@@ -18,20 +16,20 @@ pub fn create_reader<R: Read>(reader: R) -> EventReader<R> {
 
 // todo: review this is correctly handling characters inside li
 pub fn parse_string_list<R: Read>(
-    reader: &mut EventReader<R>,
+    events: &mut EventReader<R>,
     path: &Path,
     container_name: &str,
 ) -> ParseResult<Vec<String>> {
     let mut list = Vec::new();
     loop {
-        match reader.next() {
+        match events.next() {
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("li") =>
             {
-                match reader.next() {
+                match events.next() {
                     Ok(ReaderEvent::Characters(chars)) => {
                         list.push(chars);
-                        match reader.next() {
+                        match events.next() {
                             Ok(ReaderEvent::EndElement { name })
                                 if name.local_name.eq_ignore_ascii_case("li") => {}
                             Ok(event) => log::warn!(
@@ -79,13 +77,13 @@ pub fn parse_string_list<R: Read>(
 }
 
 pub fn parse_text_element<R: Read>(
-    reader: &mut EventReader<R>,
+    events: &mut EventReader<R>,
     path: &Path,
     element_name: &str,
 ) -> ParseResult<String> {
     let mut text = String::new();
     loop {
-        match reader.next() {
+        match events.next() {
             Ok(ReaderEvent::Characters(chars)) => {
                 text.push_str(&chars);
             }
@@ -96,7 +94,7 @@ pub fn parse_text_element<R: Read>(
             }
             Ok(ReaderEvent::StartElement { name, .. }) => {
                 log::warn!("unexpected start element {name} in {element_name} from {path:?}");
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(event) => {
                 log::warn!("unexpected event {event:?} in {element_name} from {path:?}");
@@ -110,10 +108,10 @@ pub fn parse_text_element<R: Read>(
 }
 
 /// Skips the current element and all its children.  This is crucial for robust error handling.
-pub fn skip_element<R: Read>(reader: &mut EventReader<R>) -> ParseResult<()> {
+pub fn skip_element<R: Read>(events: &mut EventReader<R>) -> ParseResult<()> {
     let mut depth = 1;
     loop {
-        match reader.next() {
+        match events.next() {
             Ok(ReaderEvent::StartElement { .. }) => depth += 1,
             Ok(ReaderEvent::EndElement { .. }) => depth -= 1,
             Ok(_) => {}

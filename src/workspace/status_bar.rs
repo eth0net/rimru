@@ -1,6 +1,6 @@
-use gpui::{Context, IntoElement, Pixels, Window, div, prelude::*, px, rgba};
+use gpui::{Pixels, px};
 
-use crate::theme::colors;
+use crate::{theme::colors, ui::prelude::*};
 
 pub struct StatusBar;
 

@@ -1,15 +1,14 @@
 use std::fmt::Display;
 
 use gpui::{
-    ClickEvent, Entity, FocusHandle, InteractiveElement, MouseButton, Pixels, Point, Stateful,
-    UniformList, px, relative, uniform_list,
+    ClickEvent, FocusHandle, MouseButton, Pixels, Point, UniformList, px, relative, uniform_list,
 };
 
 use crate::{game::mods::ModMetaData, project::Project, theme::colors, ui::prelude::*};
 
 use super::ModListItem;
 
-// todo: add list actions for refresh / sort etc
+// todo: add list action for sort
 pub struct ModList {
     project: Entity<Project>,
     focus_handle: FocusHandle,

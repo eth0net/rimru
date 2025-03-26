@@ -1,6 +1,6 @@
 use std::fs;
 
-use gpui::{Entity, img, relative};
+use gpui::{img, relative};
 
 use crate::{project::Project, theme::colors, ui::prelude::*};
 
@@ -14,7 +14,6 @@ impl ModDetails {
     }
 }
 
-// todo: remove details header?
 // todo: add placeholder with no selected mod
 impl Render for ModDetails {
     fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {

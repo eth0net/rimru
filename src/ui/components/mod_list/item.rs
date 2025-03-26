@@ -1,12 +1,11 @@
 use std::fs;
 
-use gpui::{ClickEvent, Entity};
+use gpui::ClickEvent;
 
 use crate::{game::mods::ModMetaData, ui::prelude::*};
 
 type OnClickFunc = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 
-// todo: make this more generic with click handlers etc
 #[derive(IntoElement)]
 pub struct ModListItem {
     id: ElementId,

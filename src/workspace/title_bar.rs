@@ -1,7 +1,10 @@
-use gpui::{Context, Decorations, IntoElement, Pixels, Window, div, prelude::*, px, rgba};
+use gpui::{Decorations, Pixels, px};
 use platforms::{PlatformStyle, macos};
 
-use crate::theme::{self, colors};
+use crate::{
+    theme::{self, colors},
+    ui::prelude::*,
+};
 
 mod platforms;
 

@@ -308,58 +308,6 @@ impl ButtonStyle {
             },
         }
     }
-
-    #[allow(unused)]
-    // todo: look into why this is not used
-    fn focused(self) -> ButtonLikeStyles {
-        match self {
-            ButtonStyle::Filled => ButtonLikeStyles {
-                background: rgba(colors::ELEMENT_BACKGROUND).into(),
-                border_color: rgba(colors::BORDER_FOCUSED).into(),
-                label_color: rgba(colors::TEXT).into(),
-                icon_color: rgba(colors::TEXT).into(),
-            },
-            ButtonStyle::Tinted(tint) => tint.button_like_style(),
-            ButtonStyle::Subtle => ButtonLikeStyles {
-                background: rgba(colors::GHOST_ELEMENT_BACKGROUND).into(),
-                border_color: rgba(colors::BORDER_FOCUSED).into(),
-                label_color: rgba(colors::TEXT).into(),
-                icon_color: rgba(colors::TEXT).into(),
-            },
-            ButtonStyle::Transparent => ButtonLikeStyles {
-                background: transparent_black(),
-                border_color: rgba(colors::BORDER_FOCUSED).into(),
-                label_color: rgba(colors::TEXT_ACCENT).into(),
-                icon_color: rgba(colors::TEXT_ACCENT).into(),
-            },
-        }
-    }
-
-    #[allow(unused)]
-    // todo: look into why this is not used
-    fn disabled(self) -> ButtonLikeStyles {
-        match self {
-            ButtonStyle::Filled => ButtonLikeStyles {
-                background: rgba(colors::ELEMENT_DISABLED).into(),
-                border_color: rgba(colors::BORDER_DISABLED).into(),
-                label_color: rgba(colors::TEXT_DISABLED).into(),
-                icon_color: rgba(colors::TEXT_DISABLED).into(),
-            },
-            ButtonStyle::Tinted(tint) => tint.button_like_style(),
-            ButtonStyle::Subtle => ButtonLikeStyles {
-                background: rgba(colors::GHOST_ELEMENT_DISABLED).into(),
-                border_color: rgba(colors::BORDER_DISABLED).into(),
-                label_color: rgba(colors::TEXT_DISABLED).into(),
-                icon_color: rgba(colors::TEXT_DISABLED).into(),
-            },
-            ButtonStyle::Transparent => ButtonLikeStyles {
-                background: transparent_black(),
-                border_color: transparent_black(),
-                label_color: rgba(colors::TEXT_DISABLED).into(),
-                icon_color: rgba(colors::TEXT_DISABLED).into(),
-            },
-        }
-    }
 }
 
 impl From<ButtonStyle> for Hsla {

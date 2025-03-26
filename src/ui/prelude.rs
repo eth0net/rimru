@@ -1,7 +1,7 @@
 pub use gpui::prelude::*;
 pub use gpui::{
-    AnyElement, AnyView, App, Context, DefiniteLength, Div, ElementId, Hsla, IntoElement, Rems,
-    RenderOnce, SharedString, Styled, Window, div, rems, rgba,
+    AnyElement, AnyView, App, Context, DefiniteLength, Div, ElementId, Entity, Hsla, IntoElement,
+    Rems, RenderOnce, SharedString, Stateful, Styled, Window, div, rems, rgba,
 };
 
 pub use super::Tooltip;

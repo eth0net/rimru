@@ -56,18 +56,17 @@ fn load_config_from_file(path: &Path) -> Option<ModsConfigData> {
 type ParseResult<T> = Result<T, String>;
 
 fn parse_mods_config<R: Read>(
-    mut event_reader: EventReader<R>,
+    mut events: EventReader<R>,
     path: &Path,
 ) -> ParseResult<ModsConfigData> {
     let mut config = ModsConfigData::default();
 
     loop {
-        let event = event_reader.next();
-        match event {
+        match events.next() {
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("ModsConfigData") =>
             {
-                parse_mods_config_data(&mut event_reader, path, &mut config)?;
+                parse_mods_config_data(&mut events, path, &mut config)?;
             }
             Ok(ReaderEvent::EndDocument) => break,
             Ok(ReaderEvent::StartDocument { .. }) => {}
@@ -84,27 +83,26 @@ fn parse_mods_config<R: Read>(
 }
 
 fn parse_mods_config_data<R: Read>(
-    event_reader: &mut EventReader<R>,
+    events: &mut EventReader<R>,
     path: &Path,
     config: &mut ModsConfigData,
 ) -> ParseResult<()> {
     loop {
-        let event = event_reader.next();
-        match event {
+        match events.next() {
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("activeMods") =>
             {
-                config.active_mods = parse_string_list(event_reader, path, "activeMods")?;
+                config.active_mods = parse_string_list(events, path, "activeMods")?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("knownExpansions") =>
             {
-                config.known_expansions = parse_string_list(event_reader, path, "knownExpansions")?;
+                config.known_expansions = parse_string_list(events, path, "knownExpansions")?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("version") =>
             {
-                config.version = parse_text_element(event_reader, path, "version")?;
+                config.version = parse_text_element(events, path, "version")?;
             }
             Ok(ReaderEvent::EndElement { name })
                 if name.local_name.eq_ignore_ascii_case("ModsConfigData") =>

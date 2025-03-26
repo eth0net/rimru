@@ -99,24 +99,24 @@ impl ModMetaData {
 fn load_mod_metadata_from_file(path: &Path, mod_meta: &mut ModMetaData) -> ParseResult<()> {
     let file = File::open(path).map_err(|e| format!("Error opening file {path:?}: {e}"))?;
     let reader = BufReader::new(file);
-    let reader = create_reader(reader);
+    let events = create_reader(reader);
 
-    parse_mod_metadata(reader, path, mod_meta)
+    parse_mod_metadata(events, path, mod_meta)
 }
 
 fn parse_mod_metadata<R: Read>(
-    mut reader: EventReader<R>,
+    mut events: EventReader<R>,
     path: &Path,
     mod_meta: &mut ModMetaData,
 ) -> ParseResult<()> {
     loop {
-        match reader.next() {
+        match events.next() {
             Ok(ReaderEvent::EndDocument) => break,
             Ok(ReaderEvent::StartDocument { .. }) => {}
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("modMetaData") =>
             {
-                parse_mod_metadata_data(&mut reader, path, mod_meta)?;
+                parse_mod_metadata_data(&mut events, path, mod_meta)?;
             }
             Ok(event) => log::trace!("unexpected root event {event:?} from {path:?}"),
             Err(e) => {
@@ -128,17 +128,17 @@ fn parse_mod_metadata<R: Read>(
 }
 
 fn parse_mod_metadata_data<R: Read>(
-    reader: &mut EventReader<R>,
+    events: &mut EventReader<R>,
     path: &Path,
     mod_meta: &mut ModMetaData,
 ) -> ParseResult<()> {
     loop {
-        match reader.next() {
+        match events.next() {
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("author") =>
             {
                 // Handle single author tag
-                let author_string = parse_text_element(reader, path, "author")?;
+                let author_string = parse_text_element(events, path, "author")?;
                 for author in author_string.split(',') {
                     mod_meta.authors.push(author.trim().to_string());
                 }
@@ -146,12 +146,12 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("authors") =>
             {
-                mod_meta.authors = parse_string_list(reader, path, "authors")?;
+                mod_meta.authors = parse_string_list(events, path, "authors")?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("description") =>
             {
-                mod_meta.description = parse_text_element(reader, path, "description")?;
+                mod_meta.description = parse_text_element(events, path, "description")?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name
@@ -159,25 +159,25 @@ fn parse_mod_metadata_data<R: Read>(
                     .eq_ignore_ascii_case("descriptionsByVersion") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("forceLoadAfter") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("forceLoadBefore") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("incompatibleWith") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name
@@ -185,37 +185,37 @@ fn parse_mod_metadata_data<R: Read>(
                     .eq_ignore_ascii_case("incompatibleWithByVersion") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadAfter") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadAfterByVersion") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadBefore") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadBeforeByVersion") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("modDependencies") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name
@@ -223,52 +223,52 @@ fn parse_mod_metadata_data<R: Read>(
                     .eq_ignore_ascii_case("modDependenciesByVersion") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("modIconPath") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("modVersion") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("name") =>
             {
-                mod_meta.name = parse_text_element(reader, path, "name")?;
+                mod_meta.name = parse_text_element(events, path, "name")?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("packageId") =>
             {
-                mod_meta.id = parse_text_element(reader, path, "packageId")?;
+                mod_meta.id = parse_text_element(events, path, "packageId")?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("shortName") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("steamAppId") =>
             {
-                mod_meta.steam_app_id = Some(parse_text_element(reader, path, "steamAppId")?);
+                mod_meta.steam_app_id = Some(parse_text_element(events, path, "steamAppId")?);
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("supportedVersions") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("url") =>
             {
                 // todo: read and process the elements
-                skip_element(reader)?;
+                skip_element(events)?;
             }
             Ok(ReaderEvent::EndElement { name })
                 if name.local_name.eq_ignore_ascii_case("modMetaData") =>
