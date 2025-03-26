@@ -1,7 +1,8 @@
 use std::fmt::Display;
 
 use gpui::{
-    Entity, InteractiveElement, MouseButton, Pixels, Point, UniformList, px, relative, uniform_list,
+    ClickEvent, Entity, FocusHandle, InteractiveElement, MouseButton, Pixels, Point, Stateful,
+    UniformList, px, relative, uniform_list,
 };
 
 use crate::{game::mods::ModMetaData, project::Project, theme::colors, ui::prelude::*};
@@ -11,26 +12,31 @@ use super::ModListItem;
 // todo: add list actions for refresh / sort etc
 pub struct ModList {
     project: Entity<Project>,
+    focus_handle: FocusHandle,
     list_name: SharedString,
     list_type: ModListType,
     // mods: Vec<Mod>, // todo: cache list
+    mouse_down: bool,
 }
 
 impl ModList {
-    pub fn new_active(project: Entity<Project>) -> Self {
-        Self::new(ModListType::Active, project)
+    pub fn new_active(project: Entity<Project>, cx: &mut Context<Self>) -> Self {
+        Self::new(ModListType::Active, project, cx)
     }
 
-    pub fn new_inactive(project: Entity<Project>) -> Self {
-        Self::new(ModListType::Inactive, project)
+    pub fn new_inactive(project: Entity<Project>, cx: &mut Context<Self>) -> Self {
+        Self::new(ModListType::Inactive, project, cx)
     }
 
-    pub fn new(list_type: ModListType, project: Entity<Project>) -> Self {
+    pub fn new(list_type: ModListType, project: Entity<Project>, cx: &mut Context<Self>) -> Self {
+        let focus_handle = cx.focus_handle();
         let list_name = SharedString::from(list_type.to_string());
         Self {
             project,
+            focus_handle,
             list_name,
             list_type,
+            mouse_down: false,
         }
     }
 
@@ -121,11 +127,11 @@ impl ModList {
     fn render_list(&self, cx: &mut Context<Self>) -> UniformList {
         let mods = self.mods_for_list_type(cx);
         uniform_list(cx.entity().clone(), self.list_name.clone(), mods.len(), {
-            move |this, range, _, cx| {
+            move |this, range, window, cx| {
                 let mut items = Vec::with_capacity(range.end - range.start);
                 for ix in range {
                     let mod_meta = cx.new(|_| mods[ix].clone());
-                    items.push(this.render_entry(mod_meta, cx));
+                    items.push(this.render_entry(mod_meta, window, cx));
                 }
                 items
             }
@@ -133,7 +139,12 @@ impl ModList {
         .flex_grow()
     }
 
-    fn render_entry(&self, mod_meta: Entity<ModMetaData>, cx: &mut Context<Self>) -> AnyElement {
+    fn render_entry(
+        &self,
+        mod_meta: Entity<ModMetaData>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Stateful<Div> {
         let mod_id = mod_meta.read_with(cx, |mod_meta, _| mod_meta.id.clone());
 
         let is_selected = self.project.read_with(cx, |project, _| {
@@ -142,15 +153,45 @@ impl ModList {
                 .is_some_and(|selected| selected.id == mod_id)
         });
 
+        let bg_color = match is_selected {
+            true => rgba(colors::ELEMENT_SELECTED),
+            false => rgba(colors::PANEL_BACKGROUND),
+        };
+
+        let bg_hover_color = match is_selected {
+            true => rgba(colors::ELEMENT_SELECTED),
+            false => rgba(colors::ELEMENT_HOVER),
+        };
+
+        let border_color =
+            if !self.mouse_down && is_selected && self.focus_handle.contains_focused(window, cx) {
+                rgba(colors::BORDER_FOCUSED)
+            } else {
+                bg_color
+            };
+
+        let border_hover_color =
+            if !self.mouse_down && is_selected && self.focus_handle.contains_focused(window, cx) {
+                rgba(colors::BORDER_FOCUSED)
+            } else {
+                bg_hover_color
+            };
+
         let id = SharedString::from(format!("{}-{}", self.list_name, mod_id));
 
         let dragged_selection = DraggedSelection {
             selected: mod_meta.read(cx).clone(),
         };
 
+        let item = ModListItem::new(id.clone(), mod_meta.clone()).toggle_state(is_selected);
+
         div()
-            .id(id.clone())
-            .hover(|style| style.bg(rgba(colors::ELEMENT_HOVER)))
+            .id(id)
+            .cursor_pointer()
+            .bg(bg_color)
+            .border_1()
+            .border_color(border_color)
+            .hover(|style| style.bg(bg_hover_color).border_color(border_hover_color))
             .on_drag(
                 dragged_selection,
                 move |selection, click_offset, _window, cx| {
@@ -168,47 +209,46 @@ impl ModList {
                     this.drag_onto(selection, mod_id.clone(), cx);
                 })
             })
-            .child(
-                ModListItem::new(id, mod_meta.clone())
-                    .toggle_state(is_selected)
-                    .on_click({
-                        let mod_meta = mod_meta.clone();
-                        let project = self.project.clone();
-                        move |event, _, cx| {
-                            let mod_meta = mod_meta.read(cx);
-                            match event.down.button {
-                                MouseButton::Left => match event.down.click_count {
-                                    1 => {
-                                        log::debug!("select {mod_meta:?}");
-                                        project.update(cx, {
-                                            let mod_meta = mod_meta.clone();
-                                            move |project, _| {
-                                                project.select_mod(&mod_meta);
-                                            }
-                                        });
-                                    }
-                                    2 => {
-                                        log::debug!("toggle {mod_meta:?}");
-                                        project.update(cx, {
-                                            let mod_meta = mod_meta.clone();
-                                            move |project, _| {
-                                                project.toggle_mod(&mod_meta);
-                                            }
-                                        });
-                                    }
-                                    _ => {}
-                                },
-                                MouseButton::Right => {
-                                    log::debug!("context menu {mod_meta:?}");
-                                }
-                                _ => {
-                                    log::debug!("unhandled click {mod_meta:?}")
-                                }
-                            }
-                        }
-                    }),
+            .on_mouse_down(
+                MouseButton::Left,
+                cx.listener(move |this, _, _, cx| {
+                    this.mouse_down = true;
+                    cx.propagate();
+                }),
             )
-            .into_any_element()
+            .on_click(cx.listener(move |this, event: &ClickEvent, _, cx| {
+                let mod_meta = mod_meta.clone();
+                match event.down.button {
+                    MouseButton::Left => match event.down.click_count {
+                        1 => {
+                            log::debug!("select {mod_meta:?}");
+                            this.project.update(cx, {
+                                move |project, cx| {
+                                    let mod_meta = mod_meta.read(cx);
+                                    project.select_mod(mod_meta);
+                                }
+                            });
+                        }
+                        2 => {
+                            log::debug!("toggle {mod_meta:?}");
+                            this.project.update(cx, {
+                                move |project, cx| {
+                                    let mod_meta = mod_meta.read(cx);
+                                    project.toggle_mod(mod_meta);
+                                }
+                            });
+                        }
+                        _ => {}
+                    },
+                    MouseButton::Right => {
+                        log::debug!("context menu {mod_meta:?}");
+                    }
+                    _ => {
+                        log::debug!("unhandled click {mod_meta:?}")
+                    }
+                }
+            }))
+            .child(item)
     }
 
     fn mods_for_list_type(&self, cx: &mut Context<Self>) -> Vec<ModMetaData> {

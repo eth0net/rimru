@@ -20,11 +20,11 @@ impl MainPane {
             // todo: add reset action to reset the active list
             // todo: add save action to save the active list
             // todo: add sort action to sort the active list
-            active_list: cx.new(|_| ModList::new_active(project.clone())),
+            active_list: cx.new(|cx| ModList::new_active(project.clone(), cx)),
             // todo: add refresh action to load new mods while keeping active mods
             // todo: add sort options to sort the inactive list by name, id, date installed, date updated etc
             // todo: add source options to filter the inactive list by official, local, or steam
-            inactive_list: cx.new(|_| ModList::new_inactive(project.clone())),
+            inactive_list: cx.new(|cx| ModList::new_inactive(project.clone(), cx)),
             details_pane: cx.new(|_| ModDetails::new(project.clone())),
         }
     }

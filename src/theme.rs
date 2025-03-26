@@ -41,4 +41,5 @@ pub mod colors {
     pub const SUCCESS_BACKGROUND: u32 = 0x53b365ff;
     pub const SUCCESS_BORDER: u32 = 0x53b365ff;
     pub const SUCCESS_TEXT: u32 = 0x53b365ff;
+    pub const PANEL_BACKGROUND: u32 = 0x010409;
 }

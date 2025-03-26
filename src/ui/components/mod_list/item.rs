@@ -2,7 +2,7 @@ use std::fs;
 
 use gpui::{ClickEvent, Entity};
 
-use crate::{game::mods::ModMetaData, theme::colors, ui::prelude::*};
+use crate::{game::mods::ModMetaData, ui::prelude::*};
 
 type OnClickFunc = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 type TooltipFunc = Box<dyn Fn(&mut Window, &mut App) -> AnyView>;
@@ -55,10 +55,6 @@ impl RenderOnce for ModListItem {
             .items_center()
             .w_full()
             .px_2()
-            .border_1()
-            .when(self.selected, |this| {
-                this.border_color(rgba(colors::BORDER_FOCUSED))
-            })
             .when_some(self.on_click, |this, on_click| {
                 this.cursor_pointer().on_click(on_click)
             })
