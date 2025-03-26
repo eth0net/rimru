@@ -47,50 +47,62 @@ impl ModList {
             ModListType::Active => {
                 vec![
                     // IconButton::from_name("sort", IconName::Sort),
-                    IconButton::from_name("save", IconName::Save).on_click({
-                        let project = self.project.clone();
-                        move |_, _, cx| {
-                            project.update(cx, |project, _| {
-                                project.save_mods_config();
-                            });
-                        }
-                    }),
-                    IconButton::from_name("reload", IconName::Reload).on_click({
-                        let project = self.project.clone();
-                        move |_, _, cx| {
-                            project.update(cx, |project, _| {
-                                project.load_mods_config();
-                                project.apply_mods_config();
-                            });
-                        }
-                    }),
-                    IconButton::from_name("reset", IconName::Reset).on_click({
-                        let project = self.project.clone();
-                        move |_, _, cx| {
-                            project.update(cx, |project, _| {
-                                project.apply_mods_config();
-                            });
-                        }
-                    }),
-                    IconButton::from_name("clear", IconName::Clear).on_click({
-                        let project = self.project.clone();
-                        move |_, _, cx| {
-                            project.update(cx, |project, _| {
-                                project.clear_active_mods();
-                            });
-                        }
-                    }),
+                    IconButton::from_name("save", IconName::Save)
+                        .on_click({
+                            let project = self.project.clone();
+                            move |_, _, cx| {
+                                project.update(cx, |project, _| {
+                                    project.save_mods_config();
+                                });
+                            }
+                        })
+                        .tooltip(Tooltip::text("Save mod order to game")),
+                    IconButton::from_name("reload", IconName::Reload)
+                        .on_click({
+                            let project = self.project.clone();
+                            move |_, _, cx| {
+                                project.update(cx, |project, _| {
+                                    project.load_mods_config();
+                                    project.apply_mods_config();
+                                });
+                            }
+                        })
+                        .tooltip(Tooltip::text("Reload mod order from game")),
+                    IconButton::from_name("reset", IconName::Reset)
+                        .on_click({
+                            let project = self.project.clone();
+                            move |_, _, cx| {
+                                project.update(cx, |project, _| {
+                                    project.apply_mods_config();
+                                });
+                            }
+                        })
+                        .tooltip(Tooltip::text("Restore loaded mod order")),
+                    IconButton::from_name("clear", IconName::Clear)
+                        .on_click({
+                            let project = self.project.clone();
+                            move |_, _, cx| {
+                                project.update(cx, |project, _| {
+                                    project.clear_active_mods();
+                                });
+                            }
+                        })
+                        .tooltip(Tooltip::text("Clear mod order")),
                 ]
             }
             ModListType::Inactive => {
-                vec![IconButton::from_name("reload", IconName::Reload).on_click({
-                    let project = self.project.clone();
-                    move |_, _, cx| {
-                        project.update(cx, |project, cx| {
-                            project.load_mods(cx);
-                        });
-                    }
-                })]
+                vec![
+                    IconButton::from_name("reload", IconName::Reload)
+                        .on_click({
+                            let project = self.project.clone();
+                            move |_, _, cx| {
+                                project.update(cx, |project, cx| {
+                                    project.load_mods(cx);
+                                });
+                            }
+                        })
+                        .tooltip(Tooltip::text("Reload installed mods")),
+                ]
             }
         };
 
@@ -155,7 +167,7 @@ impl ModList {
 
         let bg_color = match is_selected {
             true => rgba(colors::ELEMENT_SELECTED),
-            false => rgba(colors::PANEL_BACKGROUND),
+            false => Hsla::transparent_black().into(),
         };
 
         let bg_hover_color = match is_selected {

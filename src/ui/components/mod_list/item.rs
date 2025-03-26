@@ -5,7 +5,6 @@ use gpui::{ClickEvent, Entity};
 use crate::{game::mods::ModMetaData, ui::prelude::*};
 
 type OnClickFunc = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
-type TooltipFunc = Box<dyn Fn(&mut Window, &mut App) -> AnyView>;
 
 // todo: make this more generic with click handlers etc
 #[derive(IntoElement)]
@@ -14,7 +13,6 @@ pub struct ModListItem {
     mod_meta: Entity<ModMetaData>,
     selected: bool,
     on_click: Option<OnClickFunc>,
-    tooltip: Option<TooltipFunc>,
 }
 
 impl ModListItem {
@@ -24,7 +22,6 @@ impl ModListItem {
             mod_meta,
             selected: false,
             on_click: None,
-            tooltip: None,
         }
     }
 
@@ -58,7 +55,6 @@ impl RenderOnce for ModListItem {
             .when_some(self.on_click, |this, on_click| {
                 this.cursor_pointer().on_click(on_click)
             })
-            .when_some(self.tooltip, |this, tooltip| this.tooltip(tooltip))
             .child(
                 IconButton::from_name(
                     SharedString::from(format!("{mod_name}-source")),

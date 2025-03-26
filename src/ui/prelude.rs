@@ -4,6 +4,7 @@ pub use gpui::{
     RenderOnce, SharedString, Styled, Window, div, rems, rgba,
 };
 
+pub use super::Tooltip;
 pub use super::traits::clickable::*;
 pub use super::traits::disableable::*;
 pub use super::traits::toggleable::*;

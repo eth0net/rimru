@@ -11,6 +11,7 @@ pub mod colors {
     pub const BORDER_DISABLED: u32 = 0x30363dff;
     pub const BORDER_FOCUSED: u32 = 0x1f6febff;
     pub const BORDER_SELECTED: u32 = 0x30363dff;
+    pub const BORDER_VARIANT: u32 = 0x30363dff;
     pub const TEXT: u32 = 0xffffffff;
     pub const TEXT_ACCENT: u32 = 0xc2e6ffff;
     pub const TEXT_DISABLED: u32 = 0xfffdee73;
@@ -41,5 +42,6 @@ pub mod colors {
     pub const SUCCESS_BACKGROUND: u32 = 0x53b365ff;
     pub const SUCCESS_BORDER: u32 = 0x53b365ff;
     pub const SUCCESS_TEXT: u32 = 0x53b365ff;
-    pub const PANEL_BACKGROUND: u32 = 0x010409;
+    pub const PANEL_BACKGROUND: u32 = 0x010409ff;
+    pub const ELEVATED_SURFACE_BACKGROUND: u32 = 0x161b22ff;
 }
