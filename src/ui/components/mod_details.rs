@@ -30,7 +30,7 @@ impl Render for ModDetails {
                     .id("mod-details")
                     .flex()
                     .flex_col()
-                    .gap_1()
+                    .gap_2()
                     .p_2()
                     .overflow_x_hidden()
                     .overflow_y_scroll()
@@ -57,12 +57,26 @@ impl Render for ModDetails {
                         .child(
                             div()
                                 .flex()
-                                .flex_col()
+                                .flex_row()
+                                .gap_2()
                                 .text_sm()
                                 .text_color(rgba(colors::TEXT_SECONDARY))
                                 .child(mod_meta.id.clone())
                                 .child(format!("Authors: {}", mod_meta.authors.join(", "))),
                         )
+                        .when(!mod_meta.dependencies.is_empty(), |this| {
+                            this.child(
+                                div()
+                                    .flex()
+                                    .flex_col()
+                                    .text_sm()
+                                    .text_color(rgba(colors::TEXT_SECONDARY))
+                                    .child("Depends on:")
+                                    .children(
+                                        mod_meta.dependencies.iter().map(|m| format!("- {}", m.id)),
+                                    ),
+                            )
+                        })
                         .child(mod_meta.description.clone())
                     }),
             )

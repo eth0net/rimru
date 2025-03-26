@@ -72,6 +72,9 @@ fn parse_mods_config<R: Read>(
             Ok(ReaderEvent::StartDocument { .. }) => {}
             Ok(event) => {
                 log::trace!("unexpected root event {event:?} from {path:?}");
+                if let ReaderEvent::StartElement { .. } = event {
+                    skip_element(&mut events)?;
+                }
             }
             Err(e) => {
                 return Err(format!("error parsing root event from {path:?}: {e}"));
@@ -92,17 +95,17 @@ fn parse_mods_config_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("activeMods") =>
             {
-                config.active_mods = parse_string_list(events, path, "activeMods")?;
+                config.active_mods = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("knownExpansions") =>
             {
-                config.known_expansions = parse_string_list(events, path, "knownExpansions")?;
+                config.known_expansions = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("version") =>
             {
-                config.version = parse_text_element(events, path, "version")?;
+                config.version = parse_text_element(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::EndElement { name })
                 if name.local_name.eq_ignore_ascii_case("ModsConfigData") =>
@@ -117,6 +120,9 @@ fn parse_mods_config_data<R: Read>(
             }
             Ok(event) => {
                 log::warn!("unexpected event {event:?} in modsConfigData from {path:?}");
+                if let ReaderEvent::StartElement { .. } = event {
+                    skip_element(events)?;
+                }
             }
             Err(e) => {
                 return Err(format!("error parsing modsConfigData from {path:?}: {e}"));

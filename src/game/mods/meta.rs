@@ -11,12 +11,13 @@ use crate::{
     ui::IconName,
 };
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct ModMetaData {
     pub id: String,
     pub name: String,
     pub authors: Vec<String>,
     pub description: String,
+    pub dependencies: Vec<ModDependency>,
     pub steam_app_id: Option<String>,
     pub path: PathBuf,
     pub source: Source,
@@ -118,7 +119,12 @@ fn parse_mod_metadata<R: Read>(
             {
                 parse_mod_metadata_data(&mut events, path, mod_meta)?;
             }
-            Ok(event) => log::trace!("unexpected root event {event:?} from {path:?}"),
+            Ok(event) => {
+                log::trace!("unexpected root event {event:?} from {path:?}");
+                if let ReaderEvent::StartElement { .. } = event {
+                    skip_element(&mut events)?;
+                }
+            }
             Err(e) => {
                 return Err(format!("error parsing root event from {path:?}: {e}"));
             }
@@ -138,7 +144,7 @@ fn parse_mod_metadata_data<R: Read>(
                 if name.local_name.eq_ignore_ascii_case("author") =>
             {
                 // Handle single author tag
-                let author_string = parse_text_element(events, path, "author")?;
+                let author_string = parse_text_element(events, path, &name.local_name)?;
                 for author in author_string.split(',') {
                     mod_meta.authors.push(author.trim().to_string());
                 }
@@ -146,12 +152,12 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("authors") =>
             {
-                mod_meta.authors = parse_string_list(events, path, "authors")?;
+                mod_meta.authors = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("description") =>
             {
-                mod_meta.description = parse_text_element(events, path, "description")?;
+                mod_meta.description = parse_text_element(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name
@@ -214,8 +220,7 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("modDependencies") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                mod_meta.dependencies = parse_mod_dependencies(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name
@@ -240,12 +245,12 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("name") =>
             {
-                mod_meta.name = parse_text_element(events, path, "name")?;
+                mod_meta.name = parse_text_element(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("packageId") =>
             {
-                mod_meta.id = parse_text_element(events, path, "packageId")?;
+                mod_meta.id = parse_text_element(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("shortName") =>
@@ -256,7 +261,7 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("steamAppId") =>
             {
-                mod_meta.steam_app_id = Some(parse_text_element(events, path, "steamAppId")?);
+                mod_meta.steam_app_id = Some(parse_text_element(events, path, &name.local_name)?);
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("supportedVersions") =>
@@ -283,6 +288,9 @@ fn parse_mod_metadata_data<R: Read>(
             }
             Ok(event) => {
                 log::warn!("unexpected event {event:?} in modMetaData from {path:?}");
+                if let ReaderEvent::StartElement { .. } = event {
+                    skip_element(events)?;
+                }
             }
             Err(e) => {
                 return Err(format!(
@@ -292,6 +300,106 @@ fn parse_mod_metadata_data<R: Read>(
         }
     }
     Ok(())
+}
+
+fn parse_mod_dependencies<R: Read>(
+    events: &mut EventReader<R>,
+    path: &Path,
+    container_name: &str,
+) -> ParseResult<Vec<ModDependency>> {
+    let mut dependencies = Vec::new();
+    loop {
+        match events.next() {
+            Ok(ReaderEvent::StartElement { name, .. })
+                if name.local_name.eq_ignore_ascii_case("li") =>
+            {
+                let mut dependency = ModDependency::default();
+                loop {
+                    match events.next() {
+                        Ok(ReaderEvent::StartElement { name, .. })
+                            if name.local_name.eq_ignore_ascii_case("packageId") =>
+                        {
+                            dependency.id = parse_text_element(events, path, &name.local_name)?;
+                        }
+                        Ok(ReaderEvent::StartElement { name, .. })
+                            if name.local_name.eq_ignore_ascii_case("displayName") =>
+                        {
+                            dependency.name = parse_text_element(events, path, &name.local_name)?;
+                        }
+                        Ok(ReaderEvent::StartElement { name, .. })
+                            if name.local_name.eq_ignore_ascii_case("name") =>
+                        {
+                            dependency.name = parse_text_element(events, path, &name.local_name)?;
+                        }
+                        Ok(ReaderEvent::StartElement { name, .. })
+                            if name.local_name.eq_ignore_ascii_case("downloadUrl") =>
+                        {
+                            skip_element(events)?;
+                        }
+                        Ok(ReaderEvent::StartElement { name, .. })
+                            if name.local_name.eq_ignore_ascii_case("steamWorkshopUrl") =>
+                        {
+                            skip_element(events)?;
+                        }
+                        Ok(ReaderEvent::EndElement { name })
+                            if name.local_name.eq_ignore_ascii_case("li") =>
+                        {
+                            break;
+                        }
+                        Ok(ReaderEvent::Characters(chars)) => {
+                            // ignore whitespace characters
+                            if !chars.trim().is_empty() {
+                                log::warn!(
+                                    "unexpected characters {chars} in {container_name} li from {path:?}"
+                                );
+                            }
+                        }
+                        Ok(event) => {
+                            log::warn!(
+                                "unexpected event {event:?} in {container_name} li from {path:?}"
+                            );
+                            if let ReaderEvent::StartElement { .. } = event {
+                                skip_element(events)?;
+                            }
+                        }
+                        Err(e) => {
+                            return Err(format!(
+                                "error parsing {container_name} li from {path:?}: {e}"
+                            ));
+                        }
+                    }
+                }
+                dependencies.push(dependency);
+            }
+            Ok(ReaderEvent::EndElement { name })
+                if name.local_name.eq_ignore_ascii_case(container_name) =>
+            {
+                break;
+            }
+            Ok(ReaderEvent::Characters(chars)) => {
+                if !chars.trim().is_empty() {
+                    log::warn!("unexpected characters {chars} in {container_name} from {path:?}");
+                }
+            }
+            Ok(ReaderEvent::Whitespace(_)) => {} // ignore whitespace
+            Ok(event) => {
+                log::warn!("unexpected event {event:?} in {container_name} from {path:?}");
+                if let ReaderEvent::StartElement { .. } = event {
+                    skip_element(events)?;
+                }
+            }
+            Err(e) => {
+                return Err(format!("error parsing {container_name} from {path:?}: {e}"));
+            }
+        }
+    }
+    Ok(dependencies)
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct ModDependency {
+    pub id: String,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
