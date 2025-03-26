@@ -47,59 +47,44 @@ impl ModList {
                 vec![
                     // IconButton::from_name("sort", IconName::Sort),
                     IconButton::from_name("save", IconName::Save)
-                        .on_click({
-                            let project = self.project.clone();
-                            move |_, _, cx| {
-                                project.update(cx, |project, _| {
-                                    project.save_mods_config();
-                                });
-                            }
-                        })
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, _| {
+                                project.save_mods_config();
+                            });
+                        }))
                         .tooltip(Tooltip::text("Save mod order to game")),
                     IconButton::from_name("reload", IconName::Reload)
-                        .on_click({
-                            let project = self.project.clone();
-                            move |_, _, cx| {
-                                project.update(cx, |project, _| {
-                                    project.load_mods_config();
-                                    project.apply_mods_config();
-                                });
-                            }
-                        })
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, _| {
+                                project.load_mods_config();
+                                project.apply_mods_config();
+                            });
+                        }))
                         .tooltip(Tooltip::text("Reload mod order from game")),
                     IconButton::from_name("reset", IconName::Reset)
-                        .on_click({
-                            let project = self.project.clone();
-                            move |_, _, cx| {
-                                project.update(cx, |project, _| {
-                                    project.apply_mods_config();
-                                });
-                            }
-                        })
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, _| {
+                                project.apply_mods_config();
+                            });
+                        }))
                         .tooltip(Tooltip::text("Restore loaded mod order")),
                     IconButton::from_name("clear", IconName::Clear)
-                        .on_click({
-                            let project = self.project.clone();
-                            move |_, _, cx| {
-                                project.update(cx, |project, _| {
-                                    project.clear_active_mods();
-                                });
-                            }
-                        })
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, _| {
+                                project.clear_active_mods();
+                            });
+                        }))
                         .tooltip(Tooltip::text("Clear mod order")),
                 ]
             }
             ModListType::Inactive => {
                 vec![
                     IconButton::from_name("reload", IconName::Reload)
-                        .on_click({
-                            let project = self.project.clone();
-                            move |_, _, cx| {
-                                project.update(cx, |project, cx| {
-                                    project.load_mods(cx);
-                                });
-                            }
-                        })
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, cx| {
+                                project.load_mods(cx);
+                            });
+                        }))
                         .tooltip(Tooltip::text("Reload installed mods")),
                 ]
             }
@@ -203,26 +188,23 @@ impl ModList {
             .border_1()
             .border_color(border_color)
             .hover(|style| style.bg(bg_hover_color).border_color(border_hover_color))
-            .on_drag(
-                dragged_selection,
-                move |selection, click_offset, _window, cx| {
-                    cx.new(|_| DraggedModListItemView {
-                        mod_meta: selection.selected.clone(),
-                        click_offset,
-                    })
-                },
-            )
-            .drag_over::<DraggedSelection>(move |style, _, _, _| {
-                style.bg(rgba(colors::DROP_TARGET_BACKGROUND))
-            })
-            .on_drop({
-                cx.listener(move |this, selection: &DraggedSelection, _, cx| {
-                    this.drag_onto(selection, mod_id.clone(), cx);
+            .on_drag(dragged_selection, |selection, click_offset, _window, cx| {
+                cx.new(|_| DraggedModListItemView {
+                    mod_meta: selection.selected.clone(),
+                    click_offset,
                 })
             })
+            .drag_over::<DraggedSelection>(|style, _, _, _| {
+                style.bg(rgba(colors::DROP_TARGET_BACKGROUND))
+            })
+            .on_drop(
+                cx.listener(move |this, selection: &DraggedSelection, _, cx| {
+                    this.drag_onto(selection, mod_id.clone(), cx);
+                }),
+            )
             .on_mouse_down(
                 MouseButton::Left,
-                cx.listener(move |this, _, _, cx| {
+                cx.listener(|this, _, _, cx| {
                     this.mouse_down = true;
                     cx.propagate();
                 }),
@@ -242,11 +224,9 @@ impl ModList {
                         }
                         2 => {
                             log::debug!("toggle {mod_meta:?}");
-                            this.project.update(cx, {
-                                move |project, cx| {
-                                    let mod_meta = mod_meta.read(cx);
-                                    project.toggle_mod(mod_meta);
-                                }
+                            this.project.update(cx, move |project, cx| {
+                                let mod_meta = mod_meta.read(cx);
+                                project.toggle_mod(mod_meta);
                             });
                         }
                         _ => {}
