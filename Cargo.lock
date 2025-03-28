@@ -3644,6 +3644,7 @@ dependencies = [
  "rust-embed",
  "shellexpand",
  "smallvec",
+ "unicode-segmentation",
  "xml",
 ]
 
