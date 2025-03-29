@@ -1,7 +1,13 @@
 use gpui::{
-    App, Application, Bounds, TitlebarOptions, WindowBounds, WindowOptions, prelude::*, px, size,
+    Application, Bounds, KeyBinding, TitlebarOptions, WindowBounds, WindowOptions, px, size,
 };
-use rimru::{actions::Quit, assets::Assets, menu, workspace::Workspace};
+use rimru::{
+    actions::Quit,
+    assets::Assets,
+    menu,
+    ui::{prelude::*, text_input::*},
+    workspace::Workspace,
+};
 
 fn main() {
     env_logger::init();
@@ -14,6 +20,23 @@ fn main() {
         cx.on_action(quit);
         cx.activate(true);
 
+        // todo: extract to settings
+        cx.bind_keys(vec![
+            KeyBinding::new("backspace", Backspace, Some("TextInput")),
+            KeyBinding::new("backspace", Backspace, Some("TextInput")),
+            KeyBinding::new("delete", Delete, Some("TextInput")),
+            KeyBinding::new("left", Left, Some("TextInput")),
+            KeyBinding::new("right", Right, Some("TextInput")),
+            KeyBinding::new("shift-left", SelectLeft, Some("TextInput")),
+            KeyBinding::new("shift-right", SelectRight, Some("TextInput")),
+            KeyBinding::new("cmd-a", SelectAll, Some("TextInput")),
+            KeyBinding::new("cmd-v", Paste, Some("TextInput")),
+            KeyBinding::new("cmd-c", Copy, Some("TextInput")),
+            KeyBinding::new("cmd-x", Cut, Some("TextInput")),
+            KeyBinding::new("home", Home, Some("TextInput")),
+            KeyBinding::new("end", End, Some("TextInput")),
+        ]);
+
         let bounds = Bounds::centered(None, size(px(1280.), px(720.)), cx);
         cx.open_window(
             WindowOptions {
@@ -25,7 +48,7 @@ fn main() {
                 }),
                 ..Default::default()
             },
-            |_, cx| cx.new(Workspace::new),
+            |window, cx| cx.new(|cx| Workspace::new(window, cx)),
         )
         .unwrap();
     });

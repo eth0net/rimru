@@ -12,7 +12,6 @@ actions!(
         SelectAll,
         Home,
         End,
-        ShowCharacterPalette,
         Paste,
         Cut,
         Copy,

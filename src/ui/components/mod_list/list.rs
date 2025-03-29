@@ -4,37 +4,70 @@ use gpui::{
     ClickEvent, FocusHandle, MouseButton, Pixels, Point, UniformList, px, relative, uniform_list,
 };
 
-use crate::{game::mods::ModMetaData, project::Project, theme::colors, ui::prelude::*};
+use crate::{
+    game::mods::ModMetaData,
+    project::Project,
+    theme::colors,
+    ui::{TextInput, TextInputEvent, prelude::*},
+};
 
 use super::ModListItem;
 
 // todo: add list action for sort
 pub struct ModList {
     project: Entity<Project>,
+    text_input: Entity<TextInput>,
     focus_handle: FocusHandle,
     list_name: SharedString,
     list_type: ModListType,
+    search_text: SharedString,
     // mods: Vec<Mod>, // todo: cache list
     mouse_down: bool,
 }
 
 impl ModList {
-    pub fn new_active(project: Entity<Project>, cx: &mut Context<Self>) -> Self {
-        Self::new(ModListType::Active, project, cx)
+    pub fn new_active(
+        project: Entity<Project>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self::new(ModListType::Active, project, window, cx)
     }
 
-    pub fn new_inactive(project: Entity<Project>, cx: &mut Context<Self>) -> Self {
-        Self::new(ModListType::Inactive, project, cx)
+    pub fn new_inactive(
+        project: Entity<Project>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self::new(ModListType::Inactive, project, window, cx)
     }
 
-    pub fn new(list_type: ModListType, project: Entity<Project>, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        list_type: ModListType,
+        project: Entity<Project>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
         let focus_handle = cx.focus_handle();
         let list_name = SharedString::from(list_type.to_string());
+
+        let text_input = TextInput::new(cx);
+        text_input.update(cx, |input, _| {
+            input.placeholder("Search mods...");
+        });
+
+        cx.subscribe_in(&text_input, window, |this, _, event, _, _| match event {
+            TextInputEvent::ContentChanged { content } => this.search_text = content.into(),
+        })
+        .detach();
+
         Self {
             project,
+            text_input,
             focus_handle,
             list_name,
             list_type,
+            search_text: "".into(),
             mouse_down: false,
         }
     }
@@ -42,6 +75,7 @@ impl ModList {
     fn render_header(&mut self, cx: &mut Context<Self>) -> Div {
         let mods = self.mods_for_list_type(cx);
 
+        // todo: don't do this every render
         let buttons = match self.list_type {
             ModListType::Active => {
                 vec![
@@ -95,9 +129,9 @@ impl ModList {
             .flex_row()
             .justify_center()
             .items_center()
-            .gap_4()
+            .gap_2()
             .px_2()
-            .py_1()
+            .py_2()
             .child(
                 div()
                     .flex()
@@ -106,6 +140,14 @@ impl ModList {
                     .items_start()
                     .pt_0p5()
                     .child(format!("{} ({})", self.list_name, mods.len())),
+            )
+            .child(
+                div()
+                    .flex()
+                    .flex_row()
+                    .items_center()
+                    .flex_grow()
+                    .child(self.text_input.clone()),
             )
             .child(
                 div()
@@ -121,7 +163,7 @@ impl ModList {
     // todo: add search bar to filter mods in this list
     // todo: preload images for visible mods in this list
     fn render_list(&self, cx: &mut Context<Self>) -> UniformList {
-        let mods = self.mods_for_list_type(cx);
+        let mods = self.filtered_mods_for_list_type(cx);
         uniform_list(cx.entity().clone(), self.list_name.clone(), mods.len(), {
             move |this, range, window, cx| {
                 let mut items = Vec::with_capacity(range.end - range.start);
@@ -248,6 +290,17 @@ impl ModList {
                 ModListType::Active => project.active_mods(),
                 ModListType::Inactive => project.inactive_mods(),
             })
+    }
+
+    fn filtered_mods_for_list_type(&self, cx: &mut Context<Self>) -> Vec<ModMetaData> {
+        self.mods_for_list_type(cx)
+            .iter()
+            .filter(|mod_meta| {
+                mod_meta.name.contains(&self.search_text.to_string())
+                    || mod_meta.id.contains(&self.search_text.to_string())
+            })
+            .cloned()
+            .collect()
     }
 
     fn drag_onto(

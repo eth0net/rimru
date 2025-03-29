@@ -1,9 +1,9 @@
-mod button;
-mod icon;
-mod mod_details;
-mod mod_list;
-mod text_input;
-mod tooltip;
+pub mod button;
+pub mod icon;
+pub mod mod_details;
+pub mod mod_list;
+pub mod text_input;
+pub mod tooltip;
 
 pub use button::*;
 pub use icon::*;

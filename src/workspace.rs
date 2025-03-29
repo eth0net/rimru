@@ -26,14 +26,14 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new(cx: &mut Context<Self>) -> Self {
+    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let settings = cx.new(|_| Settings::new());
         let project = cx.new(|cx| Project::new(cx, settings.clone()));
 
         Self {
             project: project.clone(),
             // settings: settings.clone(),
-            main_pane: cx.new(|cx| MainPane::new(cx, project.clone())),
+            main_pane: cx.new(|cx| MainPane::new(project.clone(), window, cx)),
             status_bar: cx.new(|_| StatusBar {}),
             title_bar: cx.new(|_| TitleBar::new()),
         }
