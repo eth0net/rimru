@@ -1,4 +1,4 @@
-use std::{fs::read_dir, path::PathBuf};
+use std::{fs::read_dir, path::Path};
 
 use anyhow::Context as _;
 use gpui::{Context, Entity};
@@ -147,9 +147,9 @@ impl Project {
         });
     }
 
-    fn load_mods_from_dir<F>(&mut self, dir: &PathBuf, mod_fn: F)
+    fn load_mods_from_dir<F>(&mut self, dir: &Path, mod_fn: F)
     where
-        F: Fn(PathBuf) -> Option<ModMetaData>,
+        F: Fn(&Path) -> Result<ModMetaData, String>,
     {
         match read_dir(dir) {
             Ok(entries) => {
@@ -157,8 +157,16 @@ impl Project {
                     Ok(entry) => {
                         let path = entry.path();
                         if path.is_dir() {
-                            if let Some(m) = mod_fn(path) {
-                                self.mods.push(m)
+                            match mod_fn(&path) {
+                                Ok(m) => self.mods.push(m),
+                                Err(e) => {
+                                    // todo: show placeholder mod in list?
+                                    // todo: populate status bar?
+                                    log::error!(
+                                        "error loading mod from path: {}: {e}",
+                                        path.display(),
+                                    );
+                                }
                             }
                         }
                     }
