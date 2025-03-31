@@ -73,7 +73,13 @@ impl ModList {
     }
 
     fn render_header(&mut self, cx: &mut Context<Self>) -> Div {
-        let mods = self.mods_for_list_type(cx);
+        let mods = self.mods_for_list_type(cx).len();
+        let filtered_mods = self.filtered_mods_for_list_type(cx).len();
+
+        let mods_str = match mods == filtered_mods {
+            true => mods.to_string(),
+            false => format!("{filtered_mods} / {mods}"),
+        };
 
         // todo: don't do this every render
         let buttons = match self.list_type {
@@ -139,7 +145,7 @@ impl ModList {
                     .justify_center()
                     .items_start()
                     .pt_0p5()
-                    .child(format!("{} ({})", self.list_name, mods.len())),
+                    .child(format!("{} ({})", self.list_name, mods_str)),
             )
             .child(
                 div()
