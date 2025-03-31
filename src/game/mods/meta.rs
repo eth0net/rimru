@@ -1,7 +1,8 @@
 use std::{
-    fs::File,
+    fs::{File, metadata},
     io::BufReader,
     path::{Path, PathBuf},
+    time::SystemTime,
 };
 
 use crate::game::{paths, xml::create_reader};
@@ -22,6 +23,8 @@ pub struct ModMetaData {
     pub steam_app_id: Option<String>,
     pub path: PathBuf,
     pub source: Source,
+    pub created: Option<SystemTime>,
+    pub modified: Option<SystemTime>,
 }
 
 impl ModMetaData {
@@ -36,9 +39,18 @@ impl ModMetaData {
             ..Default::default()
         };
 
+        let dir_meta = metadata(path).map_err(|e| format!("getting directory metadata: {e}"))?;
+        match dir_meta.created() {
+            Ok(created) => mod_meta.created = Some(created),
+            Err(e) => log::error!("getting date created: {e}"),
+        }
+        match dir_meta.modified() {
+            Ok(modified) => mod_meta.modified = Some(modified),
+            Err(e) => log::error!("getting date modified: {e}"),
+        }
+
         let file = mod_meta.about_file_path();
         let file = File::open(&file).map_err(|e| format!("opening file {file:?}: {e}"))?;
-
         let reader = BufReader::new(file);
         let events = create_reader(reader);
         parse_mod_metadata(events, &mut mod_meta)?;
