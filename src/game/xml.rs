@@ -1,5 +1,5 @@
-use std::io::Read;
 use std::path::Path;
+use std::{collections::BTreeSet, io::Read};
 
 use xml::reader::{EventReader, ParserConfig, XmlEvent as ReaderEvent};
 
@@ -29,6 +29,67 @@ pub fn parse_string_list<R: Read>(
                 match events.next() {
                     Ok(ReaderEvent::Characters(chars)) => {
                         list.push(chars);
+                        match events.next() {
+                            Ok(ReaderEvent::EndElement { name })
+                                if name.local_name.eq_ignore_ascii_case("li") => {}
+                            Ok(event) => log::warn!(
+                                "unexpected event {event:?} in {container_name} li from {path:?}",
+                            ),
+                            Err(e) => {
+                                return Err(format!(
+                                    "error parsing {container_name} li from {path:?}: {e}",
+                                ));
+                            }
+                        }
+                    }
+                    Ok(ReaderEvent::EndElement { name })
+                        if name.local_name.eq_ignore_ascii_case("li") => {} // Empty li element
+                    Ok(event) => {
+                        log::warn!(
+                            "unexpected event {event:?} in {container_name} li from {path:?}"
+                        );
+                    }
+                    Err(e) => {
+                        return Err(format!(
+                            "error parsing {container_name} li from {path:?}: {e}"
+                        ));
+                    }
+                }
+            }
+            Ok(ReaderEvent::EndElement { name })
+                if name.local_name.eq_ignore_ascii_case(container_name) =>
+            {
+                break;
+            }
+            Ok(ReaderEvent::Characters(chars)) => {
+                if !chars.trim().is_empty() {
+                    log::warn!("unexpected characters {chars} in {container_name} from {path:?}");
+                }
+            }
+            Ok(ReaderEvent::Whitespace(_)) => {} // ignore whitespace
+            Ok(event) => log::warn!("unexpected event {event:?} in {container_name} from {path:?}"),
+            Err(e) => {
+                return Err(format!("error parsing {container_name} from {path:?}: {e}"));
+            }
+        }
+    }
+    Ok(list)
+}
+
+pub fn parse_string_set<R: Read>(
+    events: &mut EventReader<R>,
+    path: &Path,
+    container_name: &str,
+) -> ParseResult<BTreeSet<String>> {
+    let mut list = BTreeSet::new();
+    loop {
+        match events.next() {
+            Ok(ReaderEvent::StartElement { name, .. })
+                if name.local_name.eq_ignore_ascii_case("li") =>
+            {
+                match events.next() {
+                    Ok(ReaderEvent::Characters(chars)) => {
+                        list.insert(chars);
                         match events.next() {
                             Ok(ReaderEvent::EndElement { name })
                                 if name.local_name.eq_ignore_ascii_case("li") => {}
