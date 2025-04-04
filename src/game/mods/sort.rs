@@ -22,20 +22,13 @@ pub enum Order {
 impl Order {
     pub fn sort_fn(&self) -> impl Fn(&ModMetaData, &ModMetaData) -> Ordering {
         match self {
-            Order::Name => cmp_name,
             Order::Id => cmp_id,
+            Order::Name => cmp_name,
             Order::Created => cmp_created,
             Order::Modified => cmp_modified,
             Order::Dependencies => cmp_dependencies,
             Order::Topological => cmp_topological,
         }
-    }
-}
-
-fn cmp_name(a: &ModMetaData, b: &ModMetaData) -> Ordering {
-    match a.name.cmp(&b.name) {
-        Ordering::Equal => a.id.cmp(&b.id),
-        other => other,
     }
 }
 
@@ -46,12 +39,25 @@ fn cmp_id(a: &ModMetaData, b: &ModMetaData) -> Ordering {
     }
 }
 
+fn cmp_name(a: &ModMetaData, b: &ModMetaData) -> Ordering {
+    match a.name.cmp(&b.name) {
+        Ordering::Equal => cmp_id(a, b),
+        other => other,
+    }
+}
+
 fn cmp_created(a: &ModMetaData, b: &ModMetaData) -> Ordering {
-    a.created.cmp(&b.created)
+    match a.created.cmp(&b.created) {
+        Ordering::Equal => cmp_name(a, b),
+        other => other,
+    }
 }
 
 fn cmp_modified(a: &ModMetaData, b: &ModMetaData) -> Ordering {
-    a.modified.cmp(&b.modified)
+    match a.modified.cmp(&b.modified) {
+        Ordering::Equal => cmp_name(a, b),
+        other => other,
+    }
 }
 
 fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
@@ -83,105 +89,135 @@ fn cmp_topological(a: &ModMetaData, b: &ModMetaData) -> Ordering {
 
 #[cfg(test)]
 mod tests {
+    use std::time::{Duration, SystemTime};
+
     use super::*;
 
     #[test]
-    fn test_cmp_name_eq() {
-        let mut mods = vec![
-            ModMetaData {
-                id: "b".into(),
-                name: "B".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-        ];
-        mods.sort_unstable_by(cmp_name);
-        assert_eq!(mods[0].id, "a".to_string());
-        assert_eq!(mods[1].id, "a".to_string());
-        assert_eq!(mods[2].id, "b".to_string());
+    fn test_cmp_id() {
+        let a1 = ModMetaData {
+            id: "a".to_string(),
+            name: "a1".to_string(),
+            ..Default::default()
+        };
+        let a2 = ModMetaData {
+            id: "a".to_string(),
+            name: "a2".to_string(),
+            ..Default::default()
+        };
+        let b = ModMetaData {
+            id: "b".to_string(),
+            name: "b".to_string(),
+            ..Default::default()
+        };
+
+        assert_eq!(cmp_id(&a1, &a1), Ordering::Equal);
+        assert_eq!(cmp_id(&a1, &a2), Ordering::Less);
+        assert_eq!(cmp_id(&a1, &b), Ordering::Less);
+        assert_eq!(cmp_id(&a2, &a1), Ordering::Greater);
+        assert_eq!(cmp_id(&a2, &a2), Ordering::Equal);
+        assert_eq!(cmp_id(&a2, &b), Ordering::Less);
+        assert_eq!(cmp_id(&b, &a1), Ordering::Greater);
+        assert_eq!(cmp_id(&b, &a2), Ordering::Greater);
+        assert_eq!(cmp_id(&b, &b), Ordering::Equal);
     }
 
     #[test]
-    fn test_cmp_name_ne() {
-        let mut mods = vec![
-            ModMetaData {
-                id: "b".into(),
-                name: "B".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a1".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a2".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-        ];
-        mods.sort_unstable_by(cmp_name);
-        assert_eq!(mods[0].id, "a1".to_string());
-        assert_eq!(mods[1].id, "a2".to_string());
-        assert_eq!(mods[2].id, "b".to_string());
+    fn test_cmp_name() {
+        let a1 = ModMetaData {
+            id: "a1".to_string(),
+            name: "a".to_string(),
+            ..Default::default()
+        };
+        let a2 = ModMetaData {
+            id: "a2".to_string(),
+            name: "a".to_string(),
+            ..Default::default()
+        };
+        let b = ModMetaData {
+            id: "b".to_string(),
+            name: "b".to_string(),
+            ..Default::default()
+        };
+
+        assert_eq!(cmp_name(&a1, &a1), Ordering::Equal);
+        assert_eq!(cmp_name(&a1, &a2), Ordering::Less);
+        assert_eq!(cmp_name(&a1, &b), Ordering::Less);
+        assert_eq!(cmp_name(&a2, &a1), Ordering::Greater);
+        assert_eq!(cmp_name(&a2, &a2), Ordering::Equal);
+        assert_eq!(cmp_name(&a2, &b), Ordering::Less);
+        assert_eq!(cmp_name(&b, &a1), Ordering::Greater);
+        assert_eq!(cmp_name(&b, &a2), Ordering::Greater);
+        assert_eq!(cmp_name(&b, &b), Ordering::Equal);
     }
 
     #[test]
-    fn test_cmp_id_eq() {
-        let mut mods = vec![
-            ModMetaData {
-                id: "b".into(),
-                name: "B".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-        ];
-        mods.sort_unstable_by(cmp_id);
-        assert_eq!(mods[0].name, "A".to_string());
-        assert_eq!(mods[1].name, "A".to_string());
-        assert_eq!(mods[2].name, "B".to_string());
+    fn test_cmp_created() {
+        let now = SystemTime::now();
+        let future = now + Duration::from_secs(10);
+
+        let a1 = ModMetaData {
+            id: "a".to_string(),
+            name: "a".to_string(),
+            created: Some(now),
+            ..Default::default()
+        };
+        let a2 = ModMetaData {
+            id: "b".to_string(),
+            name: "a".to_string(),
+            created: Some(now),
+            ..Default::default()
+        };
+        let b = ModMetaData {
+            id: "b".to_string(),
+            name: "b".to_string(),
+            created: Some(future),
+            ..Default::default()
+        };
+
+        assert_eq!(cmp_created(&a1, &a1), Ordering::Equal);
+        assert_eq!(cmp_created(&a1, &a2), Ordering::Less);
+        assert_eq!(cmp_created(&a1, &b), Ordering::Less);
+        assert_eq!(cmp_created(&a2, &a1), Ordering::Greater);
+        assert_eq!(cmp_created(&a2, &a2), Ordering::Equal);
+        assert_eq!(cmp_created(&a2, &b), Ordering::Less);
+        assert_eq!(cmp_created(&b, &a1), Ordering::Greater);
+        assert_eq!(cmp_created(&b, &a2), Ordering::Greater);
+        assert_eq!(cmp_created(&b, &b), Ordering::Equal);
     }
 
     #[test]
-    fn test_cmp_id_ne() {
-        let mut mods = vec![
-            ModMetaData {
-                id: "b".into(),
-                name: "B".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-            ModMetaData {
-                id: "a".into(),
-                name: "A".into(),
-                ..Default::default()
-            },
-        ];
-        mods.sort_unstable_by(cmp_id);
-        assert_eq!(mods[0].name, "A".to_string());
-        assert_eq!(mods[1].name, "A".to_string());
-        assert_eq!(mods[2].name, "B".to_string());
+    fn test_cmp_modified() {
+        let now = SystemTime::now();
+        let future = now + Duration::from_secs(10);
+
+        let a1 = ModMetaData {
+            id: "a".to_string(),
+            name: "a".to_string(),
+            modified: Some(now),
+            ..Default::default()
+        };
+        let a2 = ModMetaData {
+            id: "b".to_string(),
+            name: "a".to_string(),
+            modified: Some(now),
+            ..Default::default()
+        };
+        let b = ModMetaData {
+            id: "b".to_string(),
+            name: "b".to_string(),
+            modified: Some(future),
+            ..Default::default()
+        };
+
+        assert_eq!(cmp_modified(&a1, &a1), Ordering::Equal);
+        assert_eq!(cmp_modified(&a1, &a2), Ordering::Less);
+        assert_eq!(cmp_modified(&a1, &b), Ordering::Less);
+        assert_eq!(cmp_modified(&a2, &a1), Ordering::Greater);
+        assert_eq!(cmp_modified(&a2, &a2), Ordering::Equal);
+        assert_eq!(cmp_modified(&a2, &b), Ordering::Less);
+        assert_eq!(cmp_modified(&b, &a1), Ordering::Greater);
+        assert_eq!(cmp_modified(&b, &a2), Ordering::Greater);
+        assert_eq!(cmp_modified(&b, &b), Ordering::Equal);
     }
 }
