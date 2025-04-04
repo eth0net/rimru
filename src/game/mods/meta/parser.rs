@@ -73,14 +73,12 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("forceLoadAfter") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                mod_meta.force_load_after = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("forceLoadBefore") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                mod_meta.force_load_before = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("incompatibleWith") =>
@@ -99,8 +97,7 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadAfter") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                mod_meta.load_after = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadAfterByVersion") =>
@@ -111,8 +108,7 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadBefore") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                mod_meta.load_before = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("loadBeforeByVersion") =>
