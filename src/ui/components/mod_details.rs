@@ -73,7 +73,7 @@ impl Render for ModDetails {
                                     .text_color(rgba(colors::TEXT_SECONDARY))
                                     .child("Depends on:")
                                     .children(
-                                        mod_meta.dependencies.iter().map(|m| format!("- {}", m.id)),
+                                        mod_meta.dependencies.keys().map(|id| format!("- {id}",)),
                                     ),
                             )
                         })

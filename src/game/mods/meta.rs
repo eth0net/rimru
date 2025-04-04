@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     fs::{File, metadata},
     io::BufReader,
     path::{Path, PathBuf},
@@ -19,7 +20,7 @@ pub struct ModMetaData {
     pub name: String,
     pub authors: Vec<String>,
     pub description: String,
-    pub dependencies: Vec<ModDependency>,
+    pub dependencies: BTreeMap<String, ModDependency>,
     pub load_after: Vec<String>,
     pub load_before: Vec<String>,
     pub force_load_after: Vec<String>,
@@ -110,6 +111,10 @@ impl ModMetaData {
 
     pub fn is_steam(&self) -> bool {
         self.source.is_steam()
+    }
+
+    pub fn depends_on(&self, id: &str) -> bool {
+        self.dependencies.contains_key(id)
     }
 }
 

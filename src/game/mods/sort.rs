@@ -61,8 +61,8 @@ fn cmp_modified(a: &ModMetaData, b: &ModMetaData) -> Ordering {
 }
 
 fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
-    let a_needs_b = a.dependencies.iter().any(|dep| dep.id == b.id);
-    let b_needs_a = b.dependencies.iter().any(|dep| dep.id == a.id);
+    let a_needs_b = a.depends_on(&b.id);
+    let b_needs_a = b.depends_on(&a.id);
 
     if a_needs_b && b_needs_a {
         log::error!(

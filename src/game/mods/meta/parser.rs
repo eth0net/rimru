@@ -1,4 +1,4 @@
-use std::{io::Read, path::Path};
+use std::{collections::BTreeMap, io::Read, path::Path};
 
 use xml::reader::{EventReader, XmlEvent as ReaderEvent};
 
@@ -205,8 +205,8 @@ fn parse_mod_dependencies<R: Read>(
     events: &mut EventReader<R>,
     path: &Path,
     container_name: &str,
-) -> ParseResult<Vec<ModDependency>> {
-    let mut dependencies = Vec::new();
+) -> ParseResult<BTreeMap<String, ModDependency>> {
+    let mut dependencies = BTreeMap::new();
     loop {
         match events.next() {
             Ok(ReaderEvent::StartElement { name, .. })
@@ -268,7 +268,7 @@ fn parse_mod_dependencies<R: Read>(
                         }
                     }
                 }
-                dependencies.push(dependency);
+                dependencies.insert(dependency.id.clone(), dependency);
             }
             Ok(ReaderEvent::EndElement { name })
                 if name.local_name.eq_ignore_ascii_case(container_name) =>
