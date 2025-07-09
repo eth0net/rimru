@@ -123,3 +123,12 @@ pub struct ModDependency {
     pub id: String,
     pub name: String,
 }
+
+impl From<&ModMetaData> for ModDependency {
+    fn from(mod_meta: &ModMetaData) -> Self {
+        ModDependency {
+            id: mod_meta.id.clone(),
+            name: mod_meta.name.clone(),
+        }
+    }
+}

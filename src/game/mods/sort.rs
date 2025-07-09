@@ -89,7 +89,12 @@ fn cmp_topological(a: &ModMetaData, b: &ModMetaData) -> Ordering {
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, SystemTime};
+    use std::{
+        collections::BTreeMap,
+        time::{Duration, SystemTime},
+    };
+
+    use crate::game::mods::ModDependency;
 
     use super::*;
 
@@ -219,5 +224,76 @@ mod tests {
         assert_eq!(cmp_modified(&b, &a1), Ordering::Greater);
         assert_eq!(cmp_modified(&b, &a2), Ordering::Greater);
         assert_eq!(cmp_modified(&b, &b), Ordering::Equal);
+    }
+
+    #[test]
+    fn test_cmp_dependencies() {
+        let c = ModMetaData {
+            id: "c".to_string(),
+            ..Default::default()
+        };
+        let b = ModMetaData {
+            id: "b".to_string(),
+            dependencies: BTreeMap::from([("c".into(), ModDependency::from(&c))]),
+            ..Default::default()
+        };
+        let a = ModMetaData {
+            id: "a".into(),
+            dependencies: BTreeMap::from([("b".into(), ModDependency::from(&b))]),
+            ..Default::default()
+        };
+
+        assert_eq!(cmp_dependencies(&a, &a), Ordering::Equal);
+        assert_eq!(cmp_dependencies(&a, &b), Ordering::Greater);
+        assert_eq!(cmp_dependencies(&a, &c), Ordering::Less);
+        assert_eq!(cmp_dependencies(&b, &a), Ordering::Less);
+        assert_eq!(cmp_dependencies(&b, &b), Ordering::Equal);
+        assert_eq!(cmp_dependencies(&b, &c), Ordering::Greater);
+        assert_eq!(cmp_dependencies(&c, &a), Ordering::Greater);
+        assert_eq!(cmp_dependencies(&c, &b), Ordering::Less);
+        assert_eq!(cmp_dependencies(&c, &c), Ordering::Equal);
+    }
+
+    #[test]
+    fn test_cmp_topological() {
+        let d = ModMetaData {
+            id: "d".to_string(),
+            ..Default::default()
+        };
+        let c = ModMetaData {
+            id: "c".to_string(),
+            dependencies: BTreeMap::from([("d".into(), ModDependency::from(&d))]),
+            ..Default::default()
+        };
+        let b = ModMetaData {
+            id: "b".to_string(),
+            dependencies: BTreeMap::from([
+                ("c".into(), ModDependency::from(&c)),
+                ("d".into(), ModDependency::from(&d)),
+            ]),
+            ..Default::default()
+        };
+        let a = ModMetaData {
+            id: "a".into(),
+            dependencies: BTreeMap::from([("b".into(), ModDependency::from(&b))]),
+            ..Default::default()
+        };
+
+        assert_eq!(cmp_topological(&a, &a), Ordering::Equal, "a == a");
+        assert_eq!(cmp_topological(&a, &b), Ordering::Less, "a < b");
+        assert_eq!(cmp_topological(&a, &c), Ordering::Less, "a < c");
+        assert_eq!(cmp_topological(&a, &d), Ordering::Greater, "a > d");
+        assert_eq!(cmp_topological(&b, &a), Ordering::Greater, "b > a");
+        assert_eq!(cmp_topological(&b, &b), Ordering::Equal, "b == b");
+        assert_eq!(cmp_topological(&b, &c), Ordering::Greater, "b > c");
+        assert_eq!(cmp_topological(&b, &d), Ordering::Greater, "b > d");
+        assert_eq!(cmp_topological(&c, &a), Ordering::Greater, "c > a");
+        assert_eq!(cmp_topological(&c, &b), Ordering::Less, "c < b");
+        assert_eq!(cmp_topological(&c, &c), Ordering::Equal, "c == c");
+        assert_eq!(cmp_topological(&c, &d), Ordering::Greater, "c > d");
+        assert_eq!(cmp_topological(&d, &a), Ordering::Less, "d < a");
+        assert_eq!(cmp_topological(&d, &b), Ordering::Less, "d < b");
+        assert_eq!(cmp_topological(&d, &c), Ordering::Less, "d < c");
+        assert_eq!(cmp_topological(&d, &d), Ordering::Equal, "d == d");
     }
 }
