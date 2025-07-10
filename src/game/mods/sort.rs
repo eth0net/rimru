@@ -61,6 +61,61 @@ fn cmp_modified(a: &ModMetaData, b: &ModMetaData) -> Ordering {
 }
 
 fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
+    // Force load-after conflict
+    let force_after_a = a.force_load_after(&b.id);
+    let force_after_b = b.force_load_after(&a.id);
+    if force_after_a && force_after_b {
+        log::error!(
+            "Force load-after conflict between {} and {}",
+            a.name,
+            b.name
+        );
+        return cmp_name(a, b);
+    }
+
+    // Force load-before conflict
+    let force_before_a = a.force_load_before(&b.id);
+    let force_before_b = b.force_load_before(&a.id);
+    if force_before_a && force_before_b {
+        log::error!(
+            "Force load-before conflict between {} and {}",
+            a.name,
+            b.name
+        );
+        return cmp_name(a, b);
+    }
+
+    if force_after_a || force_before_b {
+        return Ordering::Greater;
+    }
+    if force_after_b || force_before_a {
+        return Ordering::Less;
+    }
+
+    // Regular load-after conflict
+    let after_a = a.load_after(&b.id);
+    let after_b = b.load_after(&a.id);
+    if after_a && after_b {
+        log::error!("Load-after conflict between {} and {}", a.name, b.name);
+        return cmp_name(a, b);
+    }
+
+    // Regular load-before conflict
+    let before_a = a.load_before(&b.id);
+    let before_b = b.load_before(&a.id);
+    if before_a && before_b {
+        log::error!("Load-before conflict between {} and {}", a.name, b.name);
+        return cmp_name(a, b);
+    }
+
+    if after_a || before_b {
+        return Ordering::Greater;
+    }
+    if after_b || before_a {
+        return Ordering::Less;
+    }
+
+    // Dependency relations
     let a_needs_b = a.depends_on(&b.id);
     let b_needs_a = b.depends_on(&a.id);
 
@@ -226,14 +281,18 @@ mod tests {
         assert_eq!(cmp_modified(&b, &b), Ordering::Equal);
     }
 
-    #[test]
-    fn test_cmp_dependencies() {
-        let c = ModMetaData {
-            id: "c".to_string(),
+    fn make_mod(id: &str) -> ModMetaData {
+        ModMetaData {
+            id: id.into(),
             ..Default::default()
-        };
+        }
+    }
+
+    #[test]
+    fn test_dependency_ordering() {
+        let c = make_mod("c");
         let b = ModMetaData {
-            id: "b".to_string(),
+            id: "b".into(),
             dependencies: BTreeMap::from([("c".into(), ModDependency::from(&c))]),
             ..Default::default()
         };
@@ -243,15 +302,165 @@ mod tests {
             ..Default::default()
         };
 
-        assert_eq!(cmp_dependencies(&a, &a), Ordering::Equal);
-        assert_eq!(cmp_dependencies(&a, &b), Ordering::Greater);
-        assert_eq!(cmp_dependencies(&a, &c), Ordering::Less);
-        assert_eq!(cmp_dependencies(&b, &a), Ordering::Less);
-        assert_eq!(cmp_dependencies(&b, &b), Ordering::Equal);
-        assert_eq!(cmp_dependencies(&b, &c), Ordering::Greater);
-        assert_eq!(cmp_dependencies(&c, &a), Ordering::Greater);
-        assert_eq!(cmp_dependencies(&c, &b), Ordering::Less);
-        assert_eq!(cmp_dependencies(&c, &c), Ordering::Equal);
+        assert_eq!(
+            cmp_dependencies(&a, &b),
+            Ordering::Greater,
+            "a > b: a depends on b"
+        );
+        assert_eq!(
+            cmp_dependencies(&b, &c),
+            Ordering::Greater,
+            "b > c: b depends on c"
+        );
+        assert_eq!(
+            cmp_dependencies(&a, &c),
+            Ordering::Less,
+            "a < c: a does not depend on c, but b does"
+        );
+        assert_eq!(
+            cmp_dependencies(&b, &a),
+            Ordering::Less,
+            "b < a: b does not depend on a, but a depends on b"
+        );
+        assert_eq!(
+            cmp_dependencies(&c, &a),
+            Ordering::Greater,
+            "c > a: neither depends on the other, fallback to name"
+        );
+        assert_eq!(
+            cmp_dependencies(&c, &b),
+            Ordering::Less,
+            "c < b: c does not depend on b, but b depends on c"
+        );
+    }
+
+    #[test]
+    fn test_load_after_and_before() {
+        let mut x = make_mod("x");
+        let mut y = make_mod("y");
+        x.load_after.insert("y".into());
+        assert_eq!(
+            cmp_dependencies(&x, &y),
+            Ordering::Greater,
+            "x > y: x.load_after(y)"
+        );
+
+        y.load_before.insert("x".into());
+        assert_eq!(
+            cmp_dependencies(&x, &y),
+            Ordering::Greater,
+            "x > y: y.load_before(x)"
+        );
+
+        let mut y2 = make_mod("y2");
+        let x2 = make_mod("x2");
+        y2.load_after.insert("x2".into());
+        assert_eq!(
+            cmp_dependencies(&x2, &y2),
+            Ordering::Less,
+            "x2 < y2: y2.load_after(x2)"
+        );
+    }
+
+    #[test]
+    fn test_force_load_after_and_before() {
+        let mut m = make_mod("m");
+        let mut n = make_mod("n");
+        m.force_load_after.insert("n".into());
+        assert_eq!(
+            cmp_dependencies(&m, &n),
+            Ordering::Greater,
+            "m > n: m.force_load_after(n)"
+        );
+
+        n.force_load_before.insert("m".into());
+        assert_eq!(
+            cmp_dependencies(&m, &n),
+            Ordering::Greater,
+            "m > n: n.force_load_before(m)"
+        );
+
+        let mut n2 = make_mod("n2");
+        let m2 = make_mod("m2");
+        n2.force_load_after.insert("m2".into());
+        assert_eq!(
+            cmp_dependencies(&m2, &n2),
+            Ordering::Less,
+            "m2 < n2: n2.force_load_after(m2)"
+        );
+    }
+
+    #[test]
+    fn test_conflicting_load_relations() {
+        // Conflict: both load_after each other
+        let mut a = make_mod("a");
+        let mut b = make_mod("b");
+        a.load_after.insert("b".into());
+        b.load_after.insert("a".into());
+        assert_eq!(
+            cmp_dependencies(&a, &b),
+            cmp_name(&a, &b),
+            "conflict: both a.load_after(b) and b.load_after(a), fallback to name"
+        );
+
+        // Conflict: both load_before each other
+        let mut c = make_mod("c");
+        let mut d = make_mod("d");
+        c.load_before.insert("d".into());
+        d.load_before.insert("c".into());
+        assert_eq!(
+            cmp_dependencies(&c, &d),
+            cmp_name(&c, &d),
+            "conflict: both c.load_before(d) and d.load_before(c), fallback to name"
+        );
+
+        // Conflict: load_after and load_before both ways
+        let mut e = make_mod("e");
+        let mut f = make_mod("f");
+        e.load_after.insert("f".into());
+        f.load_before.insert("e".into());
+        f.load_after.insert("e".into());
+        e.load_before.insert("f".into());
+        assert_eq!(
+            cmp_dependencies(&e, &f),
+            cmp_name(&e, &f),
+            "conflict: both e.load_after(f)/f.load_before(e) and f.load_after(e)/e.load_before(f), fallback to name"
+        );
+
+        // Conflict: both force_load_after each other
+        let mut p = make_mod("p");
+        let mut q = make_mod("q");
+        p.force_load_after.insert("q".into());
+        q.force_load_after.insert("p".into());
+        assert_eq!(
+            cmp_dependencies(&p, &q),
+            cmp_name(&p, &q),
+            "conflict: both p.force_load_after(q) and q.force_load_after(p), fallback to name"
+        );
+
+        // Conflict: both force_load_before each other
+        let mut r = make_mod("r");
+        let mut s = make_mod("s");
+        r.force_load_before.insert("s".into());
+        s.force_load_before.insert("r".into());
+        assert_eq!(
+            cmp_dependencies(&r, &s),
+            cmp_name(&r, &s),
+            "conflict: both r.force_load_before(s) and s.force_load_before(r), fallback to name"
+        );
+
+        // Conflict: force_load_after and force_load_before both ways
+        let mut t = make_mod("t");
+        let mut u = make_mod("u");
+        t.force_load_after.insert("u".into());
+        u.force_load_before.insert("t".into());
+        u.force_load_after.insert("t".into());
+        t.force_load_before.insert("u".into());
+        assert_eq!(
+            cmp_dependencies(&t, &u),
+            cmp_name(&t, &u),
+            "conflict: both t.force_load_after(u)/u.force_load_before(t) and u.force_load_after(t)/t.force_load_before(u), fallback to name"
+        );
     }
 
     #[test]

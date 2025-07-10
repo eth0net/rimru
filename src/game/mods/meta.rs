@@ -116,6 +116,22 @@ impl ModMetaData {
     pub fn depends_on(&self, id: &str) -> bool {
         self.dependencies.contains_key(id)
     }
+
+    pub fn load_after(&self, id: &str) -> bool {
+        self.load_after.contains(id)
+    }
+
+    pub fn load_before(&self, id: &str) -> bool {
+        self.load_before.contains(id)
+    }
+
+    pub fn force_load_after(&self, id: &str) -> bool {
+        self.force_load_after.contains(id)
+    }
+
+    pub fn force_load_before(&self, id: &str) -> bool {
+        self.force_load_before.contains(id)
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
