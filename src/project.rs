@@ -285,10 +285,14 @@ impl Project {
         self.cache_mods();
     }
 
-    // pub fn sort_active_mods(&mut self) {
-    //     log::debug!("sorting active mods");
-    //     self.active_mod_ids.sort_by(|a, b| {
-    //         let mod_a
-    //     });
-    // }
+    pub fn sort_active_mods(&mut self) {
+        log::debug!("sorting active mods");
+        let mut active_mods = self.active_mods();
+        active_mods.sort_by(Order::Topological.sort_fn());
+        self.active_mod_ids = active_mods
+            .iter()
+            .map(|m| m.id.to_ascii_lowercase())
+            .collect();
+        self.cached_active_mods = active_mods;
+    }
 }

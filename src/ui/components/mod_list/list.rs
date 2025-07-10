@@ -85,7 +85,13 @@ impl ModList {
         let buttons = match self.list_type {
             ModListType::Active => {
                 vec![
-                    // IconButton::from_name("sort", IconName::Sort),
+                    IconButton::from_name("sort", IconName::Sort)
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, _| {
+                                project.sort_active_mods();
+                            });
+                        }))
+                        .tooltip(Tooltip::text("Sort active mods")),
                     IconButton::from_name("save", IconName::Save)
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.project.update(cx, |project, _| {
