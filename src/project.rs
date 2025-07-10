@@ -114,10 +114,10 @@ impl Project {
 
     fn load_official_mods(&mut self) {
         let official_mods_dir = &paths::official_mods_dir();
-        log::trace!("loading official mods from {:?}", official_mods_dir);
+        log::trace!("loading official mods from {official_mods_dir:?}");
         self.load_mods_from_dir(official_mods_dir, |path| {
             ModMetaData::new_official(path).map(|mut om| {
-                om.name = match om.id.split('.').last() {
+                om.name = match om.id.split('.').next_back() {
                     Some(name) if name.eq_ignore_ascii_case("rimworld") => "Core".to_string(),
                     Some(name) => name.to_string(),
                     None => unreachable!(),
@@ -129,13 +129,13 @@ impl Project {
 
     fn load_local_mods(&mut self, cx: &mut Context<Self>) {
         let local_mods_dir = self.settings.read(cx).local_mods_dir();
-        log::trace!("loading local mods from {:?}", local_mods_dir);
+        log::trace!("loading local mods from {local_mods_dir:?}");
         self.load_mods_from_dir(local_mods_dir, ModMetaData::new_local);
     }
 
     fn load_steam_mods(&mut self, cx: &mut Context<Self>) {
         let steam_mods_dir = self.settings.read(cx).steam_mods_dir();
-        log::trace!("loading steam mods from {:?}", steam_mods_dir);
+        log::trace!("loading steam mods from {steam_mods_dir:?}");
         let mods = self.mods.clone();
         self.load_mods_from_dir(steam_mods_dir, move |path| {
             ModMetaData::new_steam(path).map(|mut sm| {
@@ -176,7 +176,7 @@ impl Project {
                             }
                         }
                     }
-                    Err(e) => log::warn!("error reading directory entry: {}", e),
+                    Err(e) => log::warn!("error reading directory entry: {e}"),
                 });
             }
             Err(_) => log::warn!("could not read directory"),

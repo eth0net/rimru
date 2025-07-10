@@ -48,7 +48,7 @@ impl Render for ModDetails {
                                     // todo: optimise image loading
                                     let image_path = mod_meta.preview_file_path();
                                     if let Err(err) = fs::metadata(&image_path) {
-                                        log::warn!("failed to load mod image: {}", err);
+                                        log::warn!("failed to load mod image: {err}");
                                     }
                                     img(image_path).max_h_full().max_w_full()
                                 }),
