@@ -8,7 +8,6 @@ use crate::{
     settings::Settings,
 };
 
-// todo: pls cache the mod lists
 #[derive(Debug, Clone)]
 pub struct Project {
     /// rimru settings
@@ -18,7 +17,11 @@ pub struct Project {
     /// list of all installed mods (local and steam)
     mods: Vec<ModMetaData>,
     /// list of active mod ids, sourced from the config or save file
-    active_mods: Vec<String>,
+    active_mod_ids: Vec<String>,
+    /// cached list of active mods
+    cached_active_mods: Vec<ModMetaData>,
+    /// cached list of inactive mods
+    cached_inactive_mods: Vec<ModMetaData>,
     /// current selected mod in rimru
     selected_mod: Option<ModMetaData>,
 }
@@ -29,7 +32,9 @@ impl Project {
             settings,
             mods_config: None,
             mods: Vec::new(),
-            active_mods: Vec::new(),
+            active_mod_ids: Vec::new(),
+            cached_active_mods: Vec::new(),
+            cached_inactive_mods: Vec::new(),
             selected_mod: None,
         };
 
@@ -61,13 +66,14 @@ impl Project {
         log::debug!("applying mods config");
         match self.mods_config {
             Some(ref config) => {
-                self.active_mods = config.active_mods.clone();
+                self.active_mod_ids = config.active_mods.clone();
             }
             None => {
                 log::warn!("no mods config loaded");
-                self.active_mods = Vec::new();
+                self.active_mod_ids = Vec::new();
             }
         }
+        self.cache_mods();
     }
 
     /// Save mods configuration to file.
@@ -77,7 +83,7 @@ impl Project {
         match &mut self.mods_config {
             Some(mods_config) => {
                 log::info!("saving mods config");
-                mods_config.active_mods = self.active_mods.clone();
+                mods_config.active_mods = self.active_mod_ids.clone();
                 mods_config.save()
             }
             None => {
@@ -178,25 +184,29 @@ impl Project {
     }
 
     pub fn active_mods(&self) -> Vec<ModMetaData> {
-        let mut active_mods: Vec<ModMetaData> = self
-            .mods
-            .iter()
-            .filter(|m| {
-                let mod_id = m.id.to_ascii_lowercase();
-                self.active_mods.contains(&mod_id)
-                    || (m.source.is_steam() && self.active_mods.contains(&(mod_id + "_steam")))
-            })
-            .cloned()
-            .collect();
+        self.cached_active_mods.clone()
+    }
 
-        active_mods.sort_by(|a, b| {
+    pub fn inactive_mods(&self) -> Vec<ModMetaData> {
+        self.cached_inactive_mods.clone()
+    }
+
+    fn cache_mods(&mut self) {
+        log::debug!("refreshing cached mods");
+        let (mut active, inactive): (Vec<_>, Vec<_>) = self.mods.iter().cloned().partition(|m| {
+            let mod_id = m.id.to_ascii_lowercase();
+            self.active_mod_ids.contains(&mod_id)
+                || (m.source.is_steam() && self.active_mod_ids.contains(&(mod_id + "_steam")))
+        });
+
+        active.sort_by(|a, b| {
             let a_index = self
-                .active_mods
+                .active_mod_ids
                 .iter()
                 .position(|id| id.eq_ignore_ascii_case(&a.id))
                 .unwrap_or(usize::MAX);
             let b_index = self
-                .active_mods
+                .active_mod_ids
                 .iter()
                 .position(|id| id.eq_ignore_ascii_case(&b.id))
                 .unwrap_or(usize::MAX);
@@ -207,15 +217,8 @@ impl Project {
             }
         });
 
-        active_mods
-    }
-
-    pub fn inactive_mods(&self) -> Vec<ModMetaData> {
-        self.mods
-            .iter()
-            .filter(|m| !self.active_mods.contains(&m.id.to_ascii_lowercase()))
-            .cloned()
-            .collect()
+        self.cached_active_mods = active;
+        self.cached_inactive_mods = inactive;
     }
 
     pub fn selected_mod(&self) -> Option<&ModMetaData> {
@@ -228,19 +231,20 @@ impl Project {
 
     pub fn toggle_mod(&mut self, mod_meta: &ModMetaData) {
         match self
-            .active_mods
+            .active_mod_ids
             .iter()
             .position(|id| id.eq_ignore_ascii_case(&mod_meta.id))
         {
             Some(index) => {
-                self.active_mods.remove(index);
+                self.active_mod_ids.remove(index);
                 log::info!("deactivated mod: {}", mod_meta.id);
             }
             None => {
-                self.active_mods.push(mod_meta.id.to_ascii_lowercase());
+                self.active_mod_ids.push(mod_meta.id.to_ascii_lowercase());
                 log::info!("activated mod: {}", mod_meta.id);
             }
         }
+        self.cache_mods();
     }
 
     pub fn move_active_mod(&mut self, source: String, target: String) -> anyhow::Result<()> {
@@ -251,7 +255,7 @@ impl Project {
 
         let mut source_index = None;
         let mut target_index = None;
-        for (i, mod_id) in self.active_mods.iter().enumerate() {
+        for (i, mod_id) in self.active_mod_ids.iter().enumerate() {
             if mod_id.eq_ignore_ascii_case(&source) {
                 source_index = Some(i);
                 if target_index.is_some() {
@@ -269,13 +273,22 @@ impl Project {
         let source_index = source_index.with_context(|| "dragged mod is not active {source}")?;
         let target_index = target_index.with_context(|| "target mod is not active {target}")?;
 
-        let moving = self.active_mods.remove(source_index);
-        self.active_mods.insert(target_index, moving);
+        let moving = self.active_mod_ids.remove(source_index);
+        self.active_mod_ids.insert(target_index, moving);
+        self.cache_mods();
         Ok(())
     }
 
     pub fn clear_active_mods(&mut self) {
         log::info!("clearing active mods");
-        self.active_mods.clear();
+        self.active_mod_ids.clear();
+        self.cache_mods();
     }
+
+    // pub fn sort_active_mods(&mut self) {
+    //     log::debug!("sorting active mods");
+    //     self.active_mod_ids.sort_by(|a, b| {
+    //         let mod_a
+    //     });
+    // }
 }
