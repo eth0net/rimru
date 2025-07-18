@@ -3814,6 +3814,7 @@ dependencies = [
  "smallvec",
  "toml 0.9.2",
  "unicode-segmentation",
+ "windows 0.61.3",
  "xml",
 ]
 
