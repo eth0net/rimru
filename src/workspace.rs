@@ -20,10 +20,10 @@ mod title_bar;
 pub struct Workspace {
     project: Entity<Project>,
     // settings: Entity<Settings>,
-    main_pane: Entity<MainPane>,
-    status_bar: Entity<StatusBar>,
     title_bar: Entity<TitleBar>,
+    main_pane: Entity<MainPane>,
     settings_pane: Entity<SettingsPane>,
+    status_bar: Entity<StatusBar>,
 }
 
 impl Workspace {
@@ -34,10 +34,10 @@ impl Workspace {
         Self {
             project: project.clone(),
             // settings: settings.clone(),
-            main_pane: cx.new(|cx| MainPane::new(project.clone(), cx)),
-            status_bar: cx.new(|_| StatusBar::new(project.clone())),
             title_bar: cx.new(|_| TitleBar::new()),
+            main_pane: cx.new(|cx| MainPane::new(project.clone(), cx)),
             settings_pane: cx.new(|cx| SettingsPane::new(settings.clone(), window, cx)),
+            status_bar: cx.new(|_| StatusBar::new(project.clone())),
         }
     }
 
