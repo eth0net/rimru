@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::Range};
 
 use gpui::{
     ClickEvent, FocusHandle, MouseButton, Pixels, Point, UniformList, px, relative, uniform_list,
@@ -161,16 +161,18 @@ impl ModList {
     // todo: preload images for visible mods in this list
     fn render_list(&self, cx: &mut Context<Self>) -> UniformList {
         let mods = self.filtered_mods_for_list_type(cx);
-        uniform_list(cx.entity().clone(), self.list_name.clone(), mods.len(), {
-            move |this, range, window, cx| {
+        uniform_list(
+            self.list_name.clone(),
+            mods.len(),
+            cx.processor(move |this, range: Range<usize>, window, cx| {
                 let mut items = Vec::with_capacity(range.end - range.start);
                 for ix in range {
                     let mod_meta = cx.new(|_| mods[ix].clone());
                     items.push(this.render_entry(mod_meta, window, cx));
                 }
                 items
-            }
-        })
+            }),
+        )
         .flex_grow()
     }
 

@@ -1,6 +1,8 @@
+use std::panic::Location;
+
 use gpui::{
-    Bounds, ElementInputHandler, GlobalElementId, LayoutId, PaintQuad, Pixels, ShapedLine, Style,
-    TextRun, UnderlineStyle, blue, fill, hsla, point, px, relative, size,
+    Bounds, ElementInputHandler, GlobalElementId, InspectorElementId, LayoutId, PaintQuad, Pixels,
+    ShapedLine, Style, TextRun, UnderlineStyle, blue, fill, hsla, point, px, relative, size,
 };
 
 use super::*;
@@ -32,9 +34,14 @@ impl Element for TextElement {
         None
     }
 
+    fn source_location(&self) -> Option<&'static Location<'static>> {
+        None
+    }
+
     fn request_layout(
         &mut self,
-        _: Option<&GlobalElementId>,
+        _id: Option<&GlobalElementId>,
+        _inspector_id: Option<&InspectorElementId>,
         window: &mut Window,
         cx: &mut App,
     ) -> (LayoutId, Self::RequestLayoutState) {
@@ -46,9 +53,10 @@ impl Element for TextElement {
 
     fn prepaint(
         &mut self,
-        _: Option<&GlobalElementId>,
+        _id: Option<&GlobalElementId>,
+        _inspector_id: Option<&InspectorElementId>,
         bounds: Bounds<Pixels>,
-        _: &mut Self::RequestLayoutState,
+        _request_layout: &mut Self::RequestLayoutState,
         window: &mut Window,
         cx: &mut App,
     ) -> Self::PrepaintState {
@@ -102,8 +110,7 @@ impl Element for TextElement {
         let font_size = style.font_size.to_pixels(window.rem_size());
         let line = window
             .text_system()
-            .shape_line(display_text, font_size, &runs)
-            .unwrap();
+            .shape_line(display_text, font_size, &runs, None);
 
         let cursor_pos = line.x_for_index(cursor);
         let (selection, cursor) = if selected_range.is_empty() {
@@ -144,9 +151,10 @@ impl Element for TextElement {
 
     fn paint(
         &mut self,
-        _: Option<&GlobalElementId>,
+        _id: Option<&GlobalElementId>,
+        _inspector_id: Option<&InspectorElementId>,
         bounds: Bounds<Pixels>,
-        _: &mut Self::RequestLayoutState,
+        _request_layout: &mut Self::RequestLayoutState,
         prepaint: &mut Self::PrepaintState,
         window: &mut Window,
         cx: &mut App,

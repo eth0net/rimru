@@ -1,6 +1,6 @@
 use gpui::{
-    Bounds, CursorStyle, Decorations, Global, MouseButton, Pixels, Point, ResizeEdge, Size, Tiling,
-    canvas, point, px, size, transparent_black,
+    Bounds, CursorStyle, Decorations, Global, HitboxBehavior, MouseButton, Pixels, Point,
+    ResizeEdge, Size, Tiling, canvas, point, px, size, transparent_black,
 };
 use main_pane::MainPane;
 use status_bar::StatusBar;
@@ -192,7 +192,7 @@ pub fn client_side_decorations(
                         .when(!tiling.left, |div| div.border_l(BORDER_SIZE))
                         .when(!tiling.right, |div| div.border_r(BORDER_SIZE))
                         .when(!tiling.is_tiled(), |div| {
-                            div.shadow(smallvec::smallvec![gpui::BoxShadow {
+                            div.shadow(vec![gpui::BoxShadow {
                                 color: Hsla {
                                     h: 0.,
                                     s: 0.,
@@ -221,7 +221,7 @@ pub fn client_side_decorations(
                                 point(px(0.0), px(0.0)),
                                 window.window_bounds().get_bounds().size,
                             ),
-                            false,
+                            HitboxBehavior::Normal,
                         )
                     },
                     move |_bounds, hitbox, window, cx| {
@@ -246,7 +246,7 @@ pub fn client_side_decorations(
                                     CursorStyle::ResizeUpRightDownLeft
                                 }
                             },
-                            Some(&hitbox),
+                            &hitbox,
                         );
                     },
                 )
