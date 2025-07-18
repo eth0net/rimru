@@ -3,10 +3,7 @@ use std::{fs::read_dir, path::Path};
 use anyhow::Context as _;
 use gpui::{Context, Entity};
 
-use crate::{
-    game::{mods::*, paths},
-    settings::Settings,
-};
+use crate::{game::mods::*, settings::Settings};
 
 #[derive(Debug, Clone)]
 pub struct Project {
@@ -24,6 +21,8 @@ pub struct Project {
     cached_inactive_mods: Vec<ModMetaData>,
     /// current selected mod in rimru
     selected_mod: Option<ModMetaData>,
+    /// flag to indicate if settings pane is open
+    settings_open: bool,
 }
 
 impl Project {
@@ -36,9 +35,10 @@ impl Project {
             cached_active_mods: Vec::new(),
             cached_inactive_mods: Vec::new(),
             selected_mod: None,
+            settings_open: false,
         };
 
-        project.load_mods_config();
+        project.load_mods_config(cx);
         project.load_mods(cx);
         project.apply_mods_config();
         project
@@ -47,9 +47,10 @@ impl Project {
     /// Load mods configuration from file.
     ///
     /// This function parses the mods configuration from game files and updates the project.
-    pub fn load_mods_config(&mut self) {
-        log::debug!("loading mods config");
-        match ModsConfigData::load() {
+    pub fn load_mods_config(&mut self, cx: &mut Context<Self>) {
+        let path = &self.settings.read(cx).mods_config_file();
+        log::debug!("loading mods config from {path:?}");
+        match ModsConfigData::load(path) {
             Some(config) => {
                 self.mods_config = Some(config);
             }
@@ -79,12 +80,13 @@ impl Project {
     /// Save mods configuration to file.
     ///
     /// This function updates the mods configuration file with the current active mods list.
-    pub fn save_mods_config(&mut self) {
+    pub fn save_mods_config(&mut self, cx: &mut Context<Self>) {
         match &mut self.mods_config {
             Some(mods_config) => {
-                log::info!("saving mods config");
+                let path = &self.settings.read(cx).mods_config_file();
+                log::info!("saving mods config to {path:?}");
                 mods_config.active_mods = self.active_mod_ids.clone();
-                mods_config.save()
+                mods_config.save(path)
             }
             None => {
                 log::error!("no mods config to save");
@@ -99,7 +101,7 @@ impl Project {
         log::debug!("loading mods");
 
         self.mods.clear();
-        self.load_official_mods();
+        self.load_official_mods(cx);
         self.load_local_mods(cx);
         self.load_steam_mods(cx);
 
@@ -110,10 +112,11 @@ impl Project {
         });
 
         self.selected_mod = self.mods.first().cloned();
+        self.cache_mods();
     }
 
-    fn load_official_mods(&mut self) {
-        let official_mods_dir = &paths::official_mods_dir();
+    fn load_official_mods(&mut self, cx: &mut Context<Self>) {
+        let official_mods_dir = self.settings.read(cx).official_mods_dir();
         log::trace!("loading official mods from {official_mods_dir:?}");
         self.load_mods_from_dir(official_mods_dir, |path| {
             ModMetaData::new_official(path).map(|mut om| {
@@ -191,7 +194,7 @@ impl Project {
         self.cached_inactive_mods.clone()
     }
 
-    fn cache_mods(&mut self) {
+    pub fn cache_mods(&mut self) {
         log::debug!("refreshing cached mods");
         let (mut active, inactive): (Vec<_>, Vec<_>) = self.mods.iter().cloned().partition(|m| {
             let mod_id = m.id.to_ascii_lowercase();
@@ -294,5 +297,24 @@ impl Project {
             .map(|m| m.id.to_ascii_lowercase())
             .collect();
         self.cached_active_mods = active_mods;
+    }
+
+    pub fn toggle_settings(&mut self, cx: &mut Context<Self>) {
+        self.settings.update(cx, |settings, _cx| {
+            if self.settings_open {
+                settings.save();
+            } else if let Some(loaded_settings) = Settings::load() {
+                *settings = loaded_settings;
+            } else {
+                log::warn!("no settings found, using defaults");
+            }
+        });
+        self.settings_open = !self.settings_open;
+        self.load_mods(cx);
+        self.cache_mods();
+    }
+
+    pub fn is_settings_open(&self) -> bool {
+        self.settings_open
     }
 }

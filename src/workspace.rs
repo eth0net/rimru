@@ -10,7 +10,7 @@ use crate::{
     project::Project,
     settings::Settings,
     theme::{self, colors},
-    ui::prelude::*,
+    ui::{SettingsPane, prelude::*},
 };
 
 mod main_pane;
@@ -23,6 +23,7 @@ pub struct Workspace {
     main_pane: Entity<MainPane>,
     status_bar: Entity<StatusBar>,
     title_bar: Entity<TitleBar>,
+    settings_pane: Entity<SettingsPane>,
 }
 
 impl Workspace {
@@ -33,9 +34,10 @@ impl Workspace {
         Self {
             project: project.clone(),
             // settings: settings.clone(),
-            main_pane: cx.new(|cx| MainPane::new(project.clone(), window, cx)),
-            status_bar: cx.new(|_| StatusBar {}),
+            main_pane: cx.new(|cx| MainPane::new(project.clone(), cx)),
+            status_bar: cx.new(|_| StatusBar::new(project.clone())),
             title_bar: cx.new(|_| TitleBar::new()),
+            settings_pane: cx.new(|cx| SettingsPane::new(settings.clone(), window, cx)),
         }
     }
 
@@ -73,7 +75,10 @@ impl Render for Workspace {
                         .border_t_1()
                         .border_b_1()
                         .border_color(rgba(colors::BORDER))
-                        .child(self.main_pane.clone())
+                        .child(match self.project.read(cx).is_settings_open() {
+                            true => self.settings_pane.clone().into_any_element(),
+                            false => self.main_pane.clone().into_any_element(),
+                        })
                         .child(self.status_bar.clone()),
                 ),
             window,

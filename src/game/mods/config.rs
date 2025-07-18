@@ -10,7 +10,7 @@ use xml::{
     writer::{EmitterConfig, EventWriter, XmlEvent as WriterEvent},
 };
 
-use crate::game::{paths, xml::*};
+use crate::game::xml::*;
 
 #[derive(Debug, Clone, Default)]
 pub struct ModsConfigData {
@@ -20,15 +20,13 @@ pub struct ModsConfigData {
 }
 
 impl ModsConfigData {
-    pub fn load() -> Option<Self> {
-        let mods_config_path = paths::mods_config_file();
-        load_config_from_file(&mods_config_path)
+    pub fn load(path: &Path) -> Option<Self> {
+        load_config_from_file(path)
     }
 
-    pub fn save(&self) {
-        let mods_config_path = paths::mods_config_file();
-        backup_config(&mods_config_path);
-        save_config_to_file(&mods_config_path, self);
+    pub fn save(&self, path: &Path) {
+        backup_config(path);
+        save_config_to_file(path, self);
     }
 }
 

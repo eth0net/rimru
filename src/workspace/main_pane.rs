@@ -12,10 +12,10 @@ pub struct MainPane {
 }
 
 impl MainPane {
-    pub fn new(project: Entity<Project>, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(project: Entity<Project>, cx: &mut Context<Self>) -> Self {
         MainPane {
-            active_list: cx.new(|cx| ModList::new_active(project.clone(), window, cx)),
-            inactive_list: cx.new(|cx| ModList::new_inactive(project.clone(), window, cx)),
+            active_list: cx.new(|cx| ModList::new_active(project.clone(), cx)),
+            inactive_list: cx.new(|cx| ModList::new_inactive(project.clone(), cx)),
             details_pane: cx.new(|_| ModDetails::new(project.clone())),
         }
     }

@@ -10,6 +10,8 @@ pub enum IconName {
     Reset,
     Save,
     Sort,
+    // Panes?
+    Settings,
     // Mod sources
     Local,
     RimWorld,
@@ -25,6 +27,7 @@ impl IconName {
             IconName::Reset => "icons/list-restart.svg",
             IconName::Save => "icons/save.svg",
             IconName::Sort => "icons/arrow-up-down.svg",
+            IconName::Settings => "icons/settings.svg",
             IconName::Local => "icons/hard-drive.svg",
             IconName::RimWorld => "icons/rimworld.png",
             IconName::Steam => "icons/steam.png",

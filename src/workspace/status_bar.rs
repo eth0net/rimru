@@ -1,10 +1,16 @@
 use gpui::{Pixels, px};
 
-use crate::{theme::colors, ui::prelude::*};
+use crate::{project::Project, theme::colors, ui::prelude::*};
 
-pub struct StatusBar;
+pub struct StatusBar {
+    project: Entity<Project>,
+}
 
 impl StatusBar {
+    pub fn new(project: Entity<Project>) -> Self {
+        Self { project }
+    }
+
     #[cfg(not(target_os = "windows"))]
     pub fn height(window: &mut Window) -> Pixels {
         (1.5 * window.rem_size()).max(px(34.0))
@@ -18,7 +24,7 @@ impl StatusBar {
 }
 
 impl Render for StatusBar {
-    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let height = Self::height(window);
 
         div()
@@ -27,10 +33,20 @@ impl Render for StatusBar {
             .flex()
             .flex_row()
             .items_center()
+            .justify_between()
             .p_2()
             .border_t_1()
             .border_color(rgba(colors::BORDER))
             .text_sm()
             .child("status bar is wip".to_string())
+            .child(
+                IconButton::from_name("sort", IconName::Settings)
+                    .on_click(cx.listener(|this, _, _, cx| {
+                        this.project.update(cx, |project, cx| {
+                            project.toggle_settings(cx);
+                        });
+                    }))
+                    .tooltip(Tooltip::text("Toggle settings")),
+            )
     }
 }

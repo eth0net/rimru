@@ -13,7 +13,6 @@ use crate::{
 
 use super::ModListItem;
 
-// todo: add list action for sort
 pub struct ModList {
     project: Entity<Project>,
     text_input: Entity<TextInput>,
@@ -21,33 +20,19 @@ pub struct ModList {
     list_name: SharedString,
     list_type: ModListType,
     search_text: SharedString,
-    // mods: Vec<Mod>, // todo: cache list
     mouse_down: bool,
 }
 
 impl ModList {
-    pub fn new_active(
-        project: Entity<Project>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Self {
-        Self::new(ModListType::Active, project, window, cx)
+    pub fn new_active(project: Entity<Project>, cx: &mut Context<Self>) -> Self {
+        Self::new(ModListType::Active, project, cx)
     }
 
-    pub fn new_inactive(
-        project: Entity<Project>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Self {
-        Self::new(ModListType::Inactive, project, window, cx)
+    pub fn new_inactive(project: Entity<Project>, cx: &mut Context<Self>) -> Self {
+        Self::new(ModListType::Inactive, project, cx)
     }
 
-    pub fn new(
-        list_type: ModListType,
-        project: Entity<Project>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) -> Self {
+    pub fn new(list_type: ModListType, project: Entity<Project>, cx: &mut Context<Self>) -> Self {
         let focus_handle = cx.focus_handle();
         let list_name = SharedString::from(list_type.to_string());
 
@@ -56,7 +41,7 @@ impl ModList {
             input.placeholder("Search mods...");
         });
 
-        cx.subscribe_in(&text_input, window, |this, _, event, _, _| match event {
+        cx.subscribe(&text_input, |this, _, event, _| match event {
             TextInputEvent::ContentChanged { content } => this.search_text = content.into(),
         })
         .detach();
@@ -94,15 +79,15 @@ impl ModList {
                         .tooltip(Tooltip::text("Sort active mods")),
                     IconButton::from_name("save", IconName::Save)
                         .on_click(cx.listener(|this, _, _, cx| {
-                            this.project.update(cx, |project, _| {
-                                project.save_mods_config();
+                            this.project.update(cx, |project, cx| {
+                                project.save_mods_config(cx);
                             });
                         }))
                         .tooltip(Tooltip::text("Save mod order to game")),
                     IconButton::from_name("reload", IconName::Reload)
                         .on_click(cx.listener(|this, _, _, cx| {
-                            this.project.update(cx, |project, _| {
-                                project.load_mods_config();
+                            this.project.update(cx, |project, cx| {
+                                project.load_mods_config(cx);
                                 project.apply_mods_config();
                             });
                         }))
