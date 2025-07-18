@@ -28,7 +28,7 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let settings = cx.new(|_| Settings::new());
+        let settings = cx.new(|_| Settings::load_or_default());
         let project = cx.new(|cx| Project::new(cx, settings.clone()));
 
         Self {

@@ -64,6 +64,10 @@ impl Settings {
         game::paths::mods_config_file(&self.config_dir)
     }
 
+    pub fn load_or_default() -> Self {
+        Self::load().unwrap_or_default()
+    }
+
     pub fn load() -> Option<Self> {
         let settings_path = paths::settings_file();
 
