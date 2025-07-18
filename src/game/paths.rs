@@ -10,18 +10,19 @@ const STEAM_MODS_DIR: &str =
 const CONFIG_DIR: &str = "~/Library/Application Support/Rimworld/Config";
 
 #[cfg(target_os = "windows")]
-const GAME_DIR: &str = "C:/Program Files (x86)/Steam/steamapps/common/RimWorld";
+const GAME_DIR: &str = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\RimWorld";
 #[cfg(target_os = "windows")]
-const STEAM_MODS_DIR: &str = "C:/Program Files (x86)/Steam/steamapps/workshop/content/294100";
+const STEAM_MODS_DIR: &str = "C:\\Program Files (x86)\\Steam\\steamapps\\workshop\\content\\294100";
 #[cfg(target_os = "windows")]
-const CONFIG_DIR: &str = "~/AppData/LocalLow/Ludeon Studios/RimWorld by Ludeon Studios/Config";
+const CONFIG_DIR: &str = "~\\AppData\\LocalLow\\Ludeon Studios\\RimWorld by Ludeon Studios\\Config";
 
 const LOCAL_MODS_DIR: &str = "Mods";
 const OFFICIAL_MODS_DIR: &str = "Data";
 const MODS_CONFIG_FILE: &str = "ModsConfig.xml";
-const MOD_ABOUT_FILE: &str = "About/About.xml";
-const MOD_PREVIEW_FILE: &str = "About/Preview.png";
-const MOD_ICON_FILE: &str = "About/ModIcon.png";
+const MOD_ABOUT_DIR: &str = "About";
+const MOD_ABOUT_FILE: &str = "About.xml";
+const MOD_PREVIEW_FILE: &str = "Preview.png";
+const MOD_ICON_FILE: &str = "ModIcon.png";
 
 pub fn default_game_dir() -> PathBuf {
     PathBuf::from(shellexpand::tilde(GAME_DIR).as_ref())
@@ -48,13 +49,13 @@ pub fn mods_config_file(config_dir: &Path) -> PathBuf {
 }
 
 pub fn mod_about_file(mod_dir: &Path) -> PathBuf {
-    mod_dir.join(MOD_ABOUT_FILE)
+    mod_dir.join(MOD_ABOUT_DIR).join(MOD_ABOUT_FILE)
 }
 
 pub fn mod_preview_file(mod_dir: &Path) -> PathBuf {
-    mod_dir.join(MOD_PREVIEW_FILE)
+    mod_dir.join(MOD_ABOUT_DIR).join(MOD_PREVIEW_FILE)
 }
 
 pub fn mod_icon_file(mod_dir: &Path) -> PathBuf {
-    mod_dir.join(MOD_ICON_FILE)
+    mod_dir.join(MOD_ABOUT_DIR).join(MOD_ICON_FILE)
 }
