@@ -1,4 +1,4 @@
-use gpui::{Decorations, Pixels, px};
+use gpui::{Decorations, Pixels, WindowControlArea, px};
 use platforms::{PlatformStyle, macos, windows};
 
 use crate::{
@@ -33,30 +33,35 @@ impl TitleBar {
         // todo(windows) instead of hard coded size report the actual size to the Windows platform API
         px(32.0)
     }
+
+    pub fn title_bar_color(&self, _window: &mut Window, _cx: &mut Context<Self>) -> Hsla {
+        // todo(linux): implement titlebar color
+        // if cfg!(any(target_os = "linux", target_os = "freebsd")) {
+        //     if window.is_window_active() && !self.should_move {
+        //         cx.theme().colors().title_bar_background
+        //     } else {
+        //         cx.theme().colors().title_bar_inactive_background
+        //     }
+        // } else {
+        //     cx.theme().colors().title_bar_background
+        // }
+        rgba(colors::TITLE_BAR_BACKGROUND).into()
+    }
 }
 
 impl Render for TitleBar {
-    fn render(&mut self, window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
-        let height = Self::height(window);
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         // todo(linux): implement window controls
         // let supported_controls = window.window_controls();
         let decorations = window.window_decorations();
-        let titlebar_color = rgba(colors::TITLE_BAR_BACKGROUND);
-        // todo(linux): implement titlebar color
-        // let titlebar_color = if cfg!(any(target_os = "linux", target_os = "freebsd")) {
-        //     if window.is_window_active() && !self.should_move {
-        //         rgba(colors::TITLE_BAR_BACKGROUND)
-        //     } else {
-        //         rgba(colors::TITLE_BAR_INACTIVE_BACKGROUND)
-        //     }
-        // } else {
-        //     rgba(colors::TITLE_BAR_BACKGROUND)
-        // };
+        let height = Self::height(window);
+        let titlebar_color = self.title_bar_color(window, cx);
 
         div()
             .id("title-bar")
             .w_full()
             .h(height)
+            .window_control_area(WindowControlArea::Drag)
             .map(|this| {
                 match !window.is_fullscreen() && self.platform_style == PlatformStyle::Mac {
                     true => this.pl(px(macos::TRAFFIC_LIGHT_PADDING)),
@@ -88,7 +93,14 @@ impl Render for TitleBar {
                     .justify_between()
                     .size_full()
                     // Note: On Windows the title bar behavior is handled by the platform implementation.
-                    .when(self.platform_style != PlatformStyle::Windows, |this| {
+                    .when(self.platform_style == PlatformStyle::Mac, |this| {
+                        this.on_click(|event, window, _| {
+                            if event.up.click_count == 2 {
+                                window.titlebar_double_click();
+                            }
+                        })
+                    })
+                    .when(self.platform_style == PlatformStyle::Linux, |this| {
                         this.on_click(|event, window, _| {
                             if event.up.click_count == 2 {
                                 window.zoom_window();

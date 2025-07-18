@@ -1,5 +1,5 @@
 use gpui::{
-    Application, Bounds, KeyBinding, TitlebarOptions, WindowBounds, WindowOptions, px, size,
+    Application, Bounds, KeyBinding, Size, TitlebarOptions, WindowBounds, WindowOptions, px, size,
 };
 use rimru::{
     actions::Quit,
@@ -44,8 +44,14 @@ fn main() {
                 titlebar: Some(TitlebarOptions {
                     title: Some("Rimru".into()),
                     appears_transparent: true,
+                    // traffic_light_position: Some(point(px(9.), px(9.))),
                     ..Default::default()
                 }),
+                window_min_size: Some(Size {
+                    width: px(800.),
+                    height: px(600.),
+                }),
+                // window_decorations: Some(WindowDecorations::Client),
                 ..Default::default()
             },
             |window, cx| cx.new(|cx| Workspace::new(window, cx)),
