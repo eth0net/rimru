@@ -1,4 +1,5 @@
 pub mod macos;
+pub mod windows;
 
 // todo: move this to styles module if we get one
 /// The platform style to use when rendering UI.

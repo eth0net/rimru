@@ -1,5 +1,5 @@
 use gpui::{Decorations, Pixels, px};
-use platforms::{PlatformStyle, macos};
+use platforms::{PlatformStyle, macos, windows};
 
 use crate::{
     theme::{self, colors},
@@ -146,7 +146,7 @@ impl Render for TitleBar {
                     //     }
                     // }
                     // todo(windows): implement titlebar for windows
-                    // PlatformStyle::Windows => title_bar.child(WindowsWindowControls::new(height)),
+                    PlatformStyle::Windows => title_bar.child(windows::WindowControls::new(height)),
                     _ => title_bar,
                 }
             })
