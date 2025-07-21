@@ -34,7 +34,17 @@ impl Order {
 
 pub(crate) fn cmp_id(a: &ModMetaData, b: &ModMetaData) -> Ordering {
     match a.id.cmp(&b.id) {
-        Ordering::Equal => a.name.cmp(&b.name),
+        Ordering::Equal => {
+            log::warn!(
+                "Two mods have identical id '{}', but different names or paths: '{}' ({:?}) vs '{}' ({:?})",
+                a.id,
+                a.name,
+                a.path,
+                b.name,
+                b.path
+            );
+            a.name.cmp(&b.name)
+        }
         other => other,
     }
 }
@@ -48,14 +58,14 @@ pub(crate) fn cmp_name(a: &ModMetaData, b: &ModMetaData) -> Ordering {
 
 pub(crate) fn cmp_created(a: &ModMetaData, b: &ModMetaData) -> Ordering {
     match a.created.cmp(&b.created) {
-        Ordering::Equal => cmp_name(a, b),
+        Ordering::Equal => cmp_id(a, b),
         other => other,
     }
 }
 
 pub(crate) fn cmp_modified(a: &ModMetaData, b: &ModMetaData) -> Ordering {
     match a.modified.cmp(&b.modified) {
-        Ordering::Equal => cmp_name(a, b),
+        Ordering::Equal => cmp_id(a, b),
         other => other,
     }
 }
@@ -70,7 +80,7 @@ pub(crate) fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
             a.name,
             b.name
         );
-        return cmp_name(a, b);
+        return cmp_id(a, b);
     }
 
     // Force load-before conflict
@@ -82,7 +92,7 @@ pub(crate) fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
             a.name,
             b.name
         );
-        return cmp_name(a, b);
+        return cmp_id(a, b);
     }
 
     if force_after_a || force_before_b {
@@ -97,7 +107,7 @@ pub(crate) fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
     let after_b = b.load_after(&a.id);
     if after_a && after_b {
         log::error!("Load-after conflict between {} and {}", a.name, b.name);
-        return cmp_name(a, b);
+        return cmp_id(a, b);
     }
 
     // Regular load-before conflict
@@ -105,7 +115,7 @@ pub(crate) fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
     let before_b = b.load_before(&a.id);
     if before_a && before_b {
         log::error!("Load-before conflict between {} and {}", a.name, b.name);
-        return cmp_name(a, b);
+        return cmp_id(a, b);
     }
 
     if after_a || before_b {
@@ -125,13 +135,13 @@ pub(crate) fn cmp_dependencies(a: &ModMetaData, b: &ModMetaData) -> Ordering {
             a.name,
             b.name
         );
-        cmp_name(a, b)
+        cmp_id(a, b)
     } else if a_needs_b {
         Ordering::Greater
     } else if b_needs_a {
         Ordering::Less
     } else {
-        cmp_name(a, b)
+        cmp_id(a, b)
     }
 }
 
