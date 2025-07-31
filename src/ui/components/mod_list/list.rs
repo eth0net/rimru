@@ -5,7 +5,7 @@ use gpui::{
 };
 
 use crate::{
-    game::mods::ModMetaData,
+    game::mods::{ModIssues, ModMetaData},
     project::Project,
     theme::colors,
     ui::{TextInput, TextInputEvent, prelude::*},
@@ -168,7 +168,10 @@ impl ModList {
                 let mut items = Vec::with_capacity(range.end - range.start);
                 for ix in range {
                     let mod_meta = cx.new(|_| mods[ix].clone());
-                    items.push(this.render_entry(mod_meta, window, cx));
+                    let mod_issues = this.project.read_with(cx, |project, _| {
+                        project.issues_for_mod(&mods[ix].id).cloned()
+                    });
+                    items.push(this.render_entry(mod_meta, mod_issues, window, cx));
                 }
                 items
             }),
@@ -179,6 +182,7 @@ impl ModList {
     fn render_entry(
         &self,
         mod_meta: Entity<ModMetaData>,
+        mod_issues: Option<ModIssues>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Stateful<Div> {
@@ -220,7 +224,8 @@ impl ModList {
             selected: mod_meta.read(cx).clone(),
         };
 
-        let item = ModListItem::new(id.clone(), mod_meta.clone()).toggle_state(is_selected);
+        let item =
+            ModListItem::new(id.clone(), mod_meta.clone(), mod_issues).toggle_state(is_selected);
 
         div()
             .id(id)

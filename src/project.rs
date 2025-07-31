@@ -28,7 +28,7 @@ pub struct Project {
     /// flag to indicate if settings pane is open
     settings_open: bool,
     /// map of mod id (lowercase) to mod issues
-    mod_issues: HashMap<String, ModIssue>,
+    mod_issues: HashMap<String, ModIssues>,
 }
 
 impl Project {
@@ -333,17 +333,17 @@ impl Project {
     }
 
     /// Get the current map of mod issues for UI presentation.
-    pub fn mod_issues(&self) -> &HashMap<String, ModIssue> {
+    pub fn mod_issues(&self) -> &HashMap<String, ModIssues> {
         &self.mod_issues
     }
 
     /// Get the issues for a specific mod id (case-insensitive).
-    pub fn issues_for_mod(&self, mod_id: &str) -> Option<&ModIssue> {
+    pub fn issues_for_mod(&self, mod_id: &str) -> Option<&ModIssues> {
         self.mod_issues.get(&mod_id.to_ascii_lowercase())
     }
 
     /// Get a vector of issues for a list of mod ids, in the same order.
-    pub fn issues_for_mods<I>(&self, mod_ids: I) -> Vec<Option<&ModIssue>>
+    pub fn issues_for_mods<I>(&self, mod_ids: I) -> Vec<Option<&ModIssues>>
     where
         I: IntoIterator,
         I::Item: AsRef<str>,
@@ -366,7 +366,7 @@ impl Project {
             return;
         }
 
-        self.collect_regular_issues(&active_ids);
+        self.collect_regular_issues();
     }
 
     fn detect_cycle(&self, active_ids: &[String]) -> Option<Vec<String>> {
@@ -439,27 +439,25 @@ impl Project {
         log::error!("Mods in cycle: {cycle_mods:?}");
         let mut issues = HashMap::new();
         for mod_id in cycle_mods {
-            issues.insert(
-                mod_id.clone(),
-                ModIssue {
-                    mod_id: mod_id.clone(),
-                    missing_dependencies: Vec::new(),
-                    dependencies_after: Vec::new(),
-                    load_order_violations: vec![
-                        "Cycle detected in mod load order involving this mod".to_string(),
-                    ],
-                },
+            let mut mod_issues = ModIssues::new(mod_id.clone());
+            mod_issues.add_load_order_violation(
+                "Cycle detected in mod load order involving this mod".to_string(),
             );
+            issues.insert(mod_id.clone(), mod_issues);
         }
         self.mod_issues = issues;
     }
 
-    fn collect_regular_issues(&mut self, active_ids: &[String]) {
-        let active_id_set: HashSet<String> = active_ids.iter().cloned().collect();
-        let id_to_index: HashMap<String, usize> = active_ids
+    fn collect_regular_issues(&mut self) {
+        let active_mods = &self.cached_active_mods;
+        let active_id_set: HashSet<String> = active_mods
+            .iter()
+            .map(|m| m.id.to_ascii_lowercase())
+            .collect();
+        let id_to_index: HashMap<String, usize> = active_mods
             .iter()
             .enumerate()
-            .map(|(i, s)| (s.clone(), i))
+            .map(|(i, m)| (m.id.to_ascii_lowercase(), i))
             .collect();
 
         let mod_map: HashMap<String, &ModMetaData> = self
@@ -470,82 +468,82 @@ impl Project {
 
         let mut issues = HashMap::new();
 
-        for (idx, mod_id) in active_ids.iter().enumerate() {
-            let mut missing_deps = Vec::new();
-            let mut deps_after = Vec::new();
-            let mut load_order_violations = Vec::new();
+        for (this_idx, mod_meta) in active_mods.iter().enumerate() {
+            let mod_id = &mod_meta.id;
+            let mod_name = &mod_meta.name;
+            let mut mod_issues = ModIssues::new(mod_id.clone());
 
-            if let Some(mod_meta) = mod_map.get(mod_id) {
-                // 1. Check for missing dependencies
-                for dep_id in mod_meta.dependencies.keys() {
-                    let dep_id_lc = dep_id.to_ascii_lowercase();
-                    if !active_id_set.contains(&dep_id_lc) {
-                        log::warn!("Mod '{mod_id}' is missing dependency '{dep_id}'");
-                        missing_deps.push(dep_id.clone());
-                    } else if let Some(&dep_idx) = id_to_index.get(&dep_id_lc) {
-                        if dep_idx > idx {
-                            log::info!(
-                                "Mod '{mod_id}' dependency '{dep_id}' loads after it (index {dep_idx} > {idx})"
-                            );
-                            deps_after.push(dep_id.clone());
-                        }
-                    }
+            // 1. Check for missing dependencies
+            for dep_id in mod_meta.dependencies.keys() {
+                let dep_id_lc = dep_id.to_ascii_lowercase();
+                let dep_name = mod_map
+                    .get(&dep_id_lc)
+                    .map(|m| m.name.as_str())
+                    .unwrap_or("<unknown>");
+                if !active_id_set.contains(&dep_id_lc) {
+                    log::warn!(
+                        "Mod '{}' ({}) is missing dependency '{}' ({})",
+                        mod_name,
+                        mod_id,
+                        dep_name,
+                        dep_id
+                    );
+                    mod_issues.add_missing_dependency(format!("{} ({})", dep_name, dep_id));
                 }
+            }
 
-                // 2. Check load_after/force_load_after: these mods must come before this mod
-                for after_id in mod_meta
-                    .load_after
-                    .iter()
-                    .chain(mod_meta.force_load_after.iter())
-                {
-                    let after_id_lc = after_id.to_ascii_lowercase();
-                    if let (Some(&this_idx), Some(&after_idx)) =
-                        (id_to_index.get(mod_id), id_to_index.get(&after_id_lc))
-                    {
-                        if after_idx > this_idx {
-                            let msg = format!(
-                                "Should load after '{after_id}', but '{mod_id}' comes after '{after_id}'"
-                            );
-                            log::warn!("Load order violation: {msg}");
-                            load_order_violations.push(msg);
-                        }
-                    }
-                }
-
-                // 3. Check load_before/force_load_before: these mods must come after this mod
-                for before_id in mod_meta
-                    .load_before
-                    .iter()
-                    .chain(mod_meta.force_load_before.iter())
-                {
-                    let before_id_lc = before_id.to_ascii_lowercase();
-                    if let (Some(&this_idx), Some(&before_idx)) =
-                        (id_to_index.get(mod_id), id_to_index.get(&before_id_lc))
-                    {
-                        if before_idx < this_idx {
-                            let msg = format!(
-                                "Should load before '{before_id}', but '{mod_id}' comes before '{before_id}'"
-                            );
-                            log::warn!("Load order violation: {msg}");
-                            load_order_violations.push(msg);
-                        }
+            // 2. Check load_after/force_load_after: these mods must come before this mod
+            for after_id in mod_meta
+                .load_after
+                .iter()
+                .chain(mod_meta.force_load_after.iter())
+            {
+                let after_id_lc = after_id.to_ascii_lowercase();
+                let after_name = mod_map
+                    .get(&after_id_lc)
+                    .map(|m| m.name.as_str())
+                    .unwrap_or("<unknown>");
+                if let Some(&after_idx) = id_to_index.get(&after_id_lc) {
+                    if after_idx > this_idx {
+                        let msg = format!("Should load after '{}' ({})", after_name, after_id);
+                        log::warn!(
+                            "Load order violation for '{}' ({}): {}",
+                            mod_name,
+                            mod_id,
+                            msg
+                        );
+                        mod_issues.add_load_order_violation(msg);
                     }
                 }
             }
 
-            if !missing_deps.is_empty()
-                || !deps_after.is_empty()
-                || !load_order_violations.is_empty()
+            // 3. Check load_before/force_load_before: these mods must come after this mod
+            for before_id in mod_meta
+                .load_before
+                .iter()
+                .chain(mod_meta.force_load_before.iter())
             {
-                issues.insert(
-                    mod_id.clone(),
-                    ModIssue {
-                        mod_id: mod_id.clone(),
-                        missing_dependencies: missing_deps,
-                        dependencies_after: deps_after,
-                        load_order_violations,
-                    },
-                );
+                let before_id_lc = before_id.to_ascii_lowercase();
+                let before_name = mod_map
+                    .get(&before_id_lc)
+                    .map(|m| m.name.as_str())
+                    .unwrap_or("<unknown>");
+                if let Some(&before_idx) = id_to_index.get(&before_id_lc) {
+                    if before_idx < this_idx {
+                        let msg = format!("Should load before '{}' ({})", before_name, before_id);
+                        log::warn!(
+                            "Load order violation for '{}' ({}): {}",
+                            mod_name,
+                            mod_id,
+                            msg
+                        );
+                        mod_issues.add_load_order_violation(msg);
+                    }
+                }
+            }
+
+            if mod_issues.has_issues() {
+                issues.insert(mod_id.to_ascii_lowercase(), mod_issues);
             }
         }
 

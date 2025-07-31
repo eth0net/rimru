@@ -12,6 +12,9 @@ pub enum IconName {
     Sort,
     // Panes?
     Settings,
+    // Indicators
+    Warning,
+    Error,
     // Mod sources
     Local,
     RimWorld,
@@ -28,6 +31,8 @@ impl IconName {
             IconName::Save => "icons/save.svg",
             IconName::Sort => "icons/arrow-up-down.svg",
             IconName::Settings => "icons/settings.svg",
+            IconName::Warning => "icons/triangle-alert.svg",
+            IconName::Error => "icons/octagon-x.svg",
             IconName::Local => "icons/hard-drive.svg",
             IconName::RimWorld => "icons/rimworld.png",
             IconName::Steam => "icons/steam.png",

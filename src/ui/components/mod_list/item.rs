@@ -2,7 +2,11 @@ use std::fs;
 
 use gpui::ClickEvent;
 
-use crate::{game::mods::ModMetaData, ui::prelude::*};
+use crate::{
+    game::mods::{ModIssues, ModMetaData},
+    theme::colors,
+    ui::prelude::*,
+};
 
 type OnClickFunc = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 
@@ -10,15 +14,21 @@ type OnClickFunc = Box<dyn Fn(&ClickEvent, &mut Window, &mut App) + 'static>;
 pub struct ModListItem {
     id: ElementId,
     mod_meta: Entity<ModMetaData>,
+    mod_issues: Option<ModIssues>,
     selected: bool,
     on_click: Option<OnClickFunc>,
 }
 
 impl ModListItem {
-    pub fn new(id: impl Into<ElementId>, mod_meta: Entity<ModMetaData>) -> Self {
+    pub fn new(
+        id: impl Into<ElementId>,
+        mod_meta: Entity<ModMetaData>,
+        mod_issues: Option<ModIssues>,
+    ) -> Self {
         Self {
             id: id.into(),
             mod_meta,
+            mod_issues,
             selected: false,
             on_click: None,
         }
@@ -75,10 +85,33 @@ impl RenderOnce for ModListItem {
                     .flex_grow()
                     .overflow_hidden()
                     .text_ellipsis()
-                    .child(mod_name),
+                    .child(mod_name.clone()),
             )
             // todo: indicate if mod is incompatible with game version
             // todo: indicate if the mod has any load order conflicts
-            .child(div())
+            .when_some(self.mod_issues, |this, issues: ModIssues| {
+                this.child(div().flex().flex_row().items_center().px_2().child({
+                    let id = format!("{mod_name}-issues");
+
+                    let icon = if issues.has_errors() {
+                        IconName::Error
+                    } else if issues.has_warnings() {
+                        IconName::Warning
+                    } else {
+                        // todo: info?
+                        IconName::Warning
+                    };
+
+                    IconButton::from_name(SharedString::from(id), icon)
+                        .style(ButtonStyle::Transparent)
+                        .tooltip(Tooltip::text(issues.to_string()))
+                        .when(issues.has_errors(), |el| {
+                            el.icon_color(Hsla::from(rgba(colors::ERROR_TEXT)))
+                        })
+                        .when(issues.has_warnings(), |el| {
+                            el.icon_color(Hsla::from(rgba(colors::WARNING_TEXT)))
+                        })
+                }))
+            })
     }
 }

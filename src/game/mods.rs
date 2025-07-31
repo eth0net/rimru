@@ -1,9 +1,9 @@
 mod config;
-mod issue;
+mod issues;
 mod meta;
 mod sort;
 
 pub use config::*;
-pub use issue::*;
+pub use issues::*;
 pub use meta::*;
 pub use sort::*;
