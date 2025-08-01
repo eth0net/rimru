@@ -209,12 +209,11 @@ impl Project {
 
     pub fn cache_mods(&mut self) {
         log::debug!("refreshing cached mods");
-        let (mut active, mut inactive): (Vec<_>, Vec<_>) =
-            self.mods.iter().cloned().partition(|m| {
-                let mod_id = m.id.to_ascii_lowercase();
-                self.active_mod_ids.contains(&mod_id)
-                    || (m.source.is_steam() && self.active_mod_ids.contains(&(mod_id + "_steam")))
-            });
+        let (mut active, inactive): (Vec<_>, Vec<_>) = self.mods.iter().cloned().partition(|m| {
+            let mod_id = m.id.to_ascii_lowercase();
+            self.active_mod_ids.contains(&mod_id)
+                || (m.source.is_steam() && self.active_mod_ids.contains(&(mod_id + "_steam")))
+        });
 
         active.sort_by(|a, b| {
             let a_index = self
@@ -233,22 +232,6 @@ impl Project {
                 other => other,
             }
         });
-
-        if let Some(config) = &self.mods_config {
-            if self.show_supported_mods_only() {
-                let game_version = config.minor_version();
-                if !game_version.is_empty() {
-                    log::debug!("filtering mods by supported game version: {}", game_version);
-                    inactive.retain(|m| m.supported_versions.contains(&game_version));
-                } else {
-                    log::warn!("mods config has no minor version, ignoring supported mods filter");
-                }
-            } else {
-                log::debug!("not filtering mods by supported game version");
-            }
-        } else {
-            log::warn!("no mods config loaded, not filtering mods by supported game version");
-        }
 
         self.cached_active_mods = active;
         self.cached_inactive_mods = inactive;
@@ -364,6 +347,12 @@ impl Project {
 
     pub fn is_settings_open(&self) -> bool {
         self.settings_open
+    }
+
+    pub fn game_version(&self) -> Option<String> {
+        self.mods_config
+            .as_ref()
+            .map(|config| config.minor_version())
     }
 
     /// Get the current map of mod issues for UI presentation.

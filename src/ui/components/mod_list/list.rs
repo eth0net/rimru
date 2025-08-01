@@ -315,11 +315,32 @@ impl ModList {
     }
 
     fn filtered_mods_for_list_type(&self, cx: &mut Context<Self>) -> Vec<ModMetaData> {
+        let search = self.search_text.to_string();
+        let is_inactive = self.list_type == ModListType::Inactive;
+        let show_supported_only = is_inactive
+            && self
+                .project
+                .read_with(cx, |project, _| project.show_supported_mods_only());
+        let game_version = if show_supported_only {
+            self.project
+                .read_with(cx, |project, _| project.game_version())
+        } else {
+            None
+        };
+
         self.mods_for_list_type(cx)
             .iter()
             .filter(|mod_meta| {
-                mod_meta.name.contains(&self.search_text.to_string())
-                    || mod_meta.id.contains(&self.search_text.to_string())
+                // Search filter
+                (search.is_empty()
+                    || mod_meta.name.contains(&search)
+                    || mod_meta.id.contains(&search))
+                // Supported mods filter (only for inactive list)
+                && (!show_supported_only
+                    || match &game_version {
+                        Some(version) => mod_meta.supported_versions.contains(version),
+                        None => true,
+                    })
             })
             .cloned()
             .collect()
