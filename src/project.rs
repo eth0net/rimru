@@ -472,6 +472,14 @@ impl Project {
     }
 
     fn collect_regular_issues(&mut self) {
+        let mut issues = HashMap::new();
+        self.collect_active_mod_issues(&mut issues);
+        self.collect_inactive_mod_issues(&mut issues);
+        log::info!("Found {} mod issues", issues.len());
+        self.mod_issues = issues;
+    }
+
+    fn collect_active_mod_issues(&self, issues: &mut HashMap<String, ModIssues>) {
         let active_mods = &self.cached_active_mods;
         let active_id_set: HashSet<String> = active_mods
             .iter()
@@ -488,8 +496,6 @@ impl Project {
             .iter()
             .map(|m| (m.id.to_ascii_lowercase(), m))
             .collect();
-
-        let mut issues = HashMap::new();
 
         for (this_idx, mod_meta) in active_mods.iter().enumerate() {
             let mod_id = &mod_meta.id;
@@ -604,8 +610,42 @@ impl Project {
                 issues.insert(mod_id.to_ascii_lowercase(), mod_issues);
             }
         }
+    }
 
-        log::info!("Found {} mod issues", issues.len());
-        self.mod_issues = issues;
+    fn collect_inactive_mod_issues(&self, issues: &mut HashMap<String, ModIssues>) {
+        let active_mods = &self.cached_active_mods;
+        let active_id_set: HashSet<String> = active_mods
+            .iter()
+            .map(|m| m.id.to_ascii_lowercase())
+            .collect();
+
+        let inactive_mods = self
+            .mods
+            .iter()
+            .filter(|m| !active_id_set.contains(&m.id.to_ascii_lowercase()));
+
+        if let Some(config) = &self.mods_config {
+            let game_version = config.minor_version();
+            for mod_meta in inactive_mods {
+                let mod_id = &mod_meta.id;
+                // Don't overwrite issues for active mods
+                if issues.contains_key(&mod_id.to_ascii_lowercase()) {
+                    continue;
+                }
+                if !mod_meta.supported_versions.contains(&game_version)
+                    && mod_id.to_ascii_lowercase() != "ludeon.rimworld"
+                {
+                    let mut mod_issues = ModIssues::new(mod_id.clone());
+                    log::warn!(
+                        "Inactive mod '{}' ({}) is not compatible with game version '{}'",
+                        mod_meta.name,
+                        mod_id,
+                        game_version
+                    );
+                    mod_issues.add_unsupported_game_version(game_version.clone());
+                    issues.insert(mod_id.to_ascii_lowercase(), mod_issues);
+                }
+            }
+        }
     }
 }
