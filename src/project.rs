@@ -510,7 +510,9 @@ impl Project {
             // Check game version compatibility
             if let Some(config) = &self.mods_config {
                 let game_version = config.minor_version();
-                if !mod_meta.supported_versions.contains(&game_version) {
+                if !mod_meta.supported_versions.contains(&game_version)
+                    && mod_id.to_ascii_lowercase() != "ludeon.rimworld"
+                {
                     log::warn!(
                         "Mod '{}' ({}) is not compatible with game version '{}'",
                         mod_name,
