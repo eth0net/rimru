@@ -18,6 +18,9 @@ pub use source::*;
 pub struct ModMetaData {
     pub id: String,
     pub name: String,
+    pub short_name: Option<String>,
+    pub icon_path: Option<PathBuf>,
+    pub version: Option<String>,
     pub authors: Vec<String>,
     pub description: String,
     pub descriptions_by_version: BTreeMap<String, String>,
@@ -33,6 +36,7 @@ pub struct ModMetaData {
     pub incompatible_with_by_version: BTreeMap<String, BTreeSet<String>>,
     pub steam_app_id: Option<String>,
     pub supported_versions: Vec<String>,
+    pub url: Option<String>,
     pub path: PathBuf,
     pub source: Source,
     pub created: Option<SystemTime>,

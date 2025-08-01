@@ -1,4 +1,8 @@
-use std::{collections::BTreeMap, io::Read, path::Path};
+use std::{
+    collections::BTreeMap,
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 use xml::reader::{EventReader, XmlEvent as ReaderEvent};
 
@@ -134,14 +138,14 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("modIconPath") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                let icon_path = parse_text_element(events, path, &name.local_name)?;
+                mod_meta.icon_path = Some(PathBuf::from(icon_path));
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("modVersion") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                let version = parse_text_element(events, path, &name.local_name)?;
+                mod_meta.version = Some(version);
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("name") =>
@@ -156,8 +160,8 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("shortName") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                let short_name = parse_text_element(events, path, &name.local_name)?;
+                mod_meta.short_name = Some(short_name);
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("steamAppId") =>
@@ -173,8 +177,8 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("url") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                let url = parse_text_element(events, path, &name.local_name)?;
+                mod_meta.url = Some(url);
             }
             Ok(ReaderEvent::EndElement { name })
                 if name.local_name.eq_ignore_ascii_case("modMetaData") =>
