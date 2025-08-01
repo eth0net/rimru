@@ -109,7 +109,10 @@ impl ModMetaData {
     }
 
     pub fn icon_file_path(&self) -> PathBuf {
-        paths::mod_icon_file(&self.path)
+        match &self.icon_path {
+            Some(icon_path) => self.path.join(icon_path),
+            _ => paths::mod_icon_file(&self.path),
+        }
     }
 
     pub fn is_official(&self) -> bool {
