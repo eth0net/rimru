@@ -10,6 +10,7 @@ pub enum IconName {
     Reset,
     Save,
     Sort,
+    Supported,
     // Panes?
     Settings,
     // Indicators
@@ -30,6 +31,7 @@ impl IconName {
             IconName::Reset => "icons/list-restart.svg",
             IconName::Save => "icons/save.svg",
             IconName::Sort => "icons/arrow-up-down.svg",
+            IconName::Supported => "icons/cable.svg",
             IconName::Settings => "icons/settings.svg",
             IconName::Warning => "icons/triangle-alert.svg",
             IconName::Error => "icons/octagon-x.svg",

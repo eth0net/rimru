@@ -29,6 +29,8 @@ pub struct Project {
     settings_open: bool,
     /// map of mod id (lowercase) to mod issues
     mod_issues: HashMap<String, ModIssues>,
+    /// flag to indicate if only supported mods should be shown
+    supported_mods_only: bool,
 }
 
 impl Project {
@@ -43,6 +45,7 @@ impl Project {
             selected_mod: None,
             settings_open: false,
             mod_issues: HashMap::new(),
+            supported_mods_only: false,
         };
 
         project.load_mods_config(cx);
@@ -206,11 +209,12 @@ impl Project {
 
     pub fn cache_mods(&mut self) {
         log::debug!("refreshing cached mods");
-        let (mut active, inactive): (Vec<_>, Vec<_>) = self.mods.iter().cloned().partition(|m| {
-            let mod_id = m.id.to_ascii_lowercase();
-            self.active_mod_ids.contains(&mod_id)
-                || (m.source.is_steam() && self.active_mod_ids.contains(&(mod_id + "_steam")))
-        });
+        let (mut active, mut inactive): (Vec<_>, Vec<_>) =
+            self.mods.iter().cloned().partition(|m| {
+                let mod_id = m.id.to_ascii_lowercase();
+                self.active_mod_ids.contains(&mod_id)
+                    || (m.source.is_steam() && self.active_mod_ids.contains(&(mod_id + "_steam")))
+            });
 
         active.sort_by(|a, b| {
             let a_index = self
@@ -229,6 +233,22 @@ impl Project {
                 other => other,
             }
         });
+
+        if let Some(config) = &self.mods_config {
+            if self.show_supported_mods_only() {
+                let game_version = config.minor_version();
+                if !game_version.is_empty() {
+                    log::debug!("filtering mods by supported game version: {}", game_version);
+                    inactive.retain(|m| m.supported_versions.contains(&game_version));
+                } else {
+                    log::warn!("mods config has no minor version, ignoring supported mods filter");
+                }
+            } else {
+                log::debug!("not filtering mods by supported game version");
+            }
+        } else {
+            log::warn!("no mods config loaded, not filtering mods by supported game version");
+        }
 
         self.cached_active_mods = active;
         self.cached_inactive_mods = inactive;
@@ -310,6 +330,20 @@ impl Project {
             .collect();
         self.cached_active_mods = active_mods;
         self.update_mod_issues();
+    }
+
+    pub fn toggle_supported_mods_only(&mut self) {
+        self.supported_mods_only = !self.supported_mods_only;
+        log::debug!(
+            "toggling supported mods only to {}",
+            self.supported_mods_only
+        );
+        self.cache_mods();
+        self.update_mod_issues();
+    }
+
+    pub fn show_supported_mods_only(&self) -> bool {
+        self.supported_mods_only
     }
 
     pub fn toggle_settings(&mut self, cx: &mut Context<Self>) {

@@ -110,6 +110,23 @@ impl ModList {
             }
             ModListType::Inactive => {
                 vec![
+                    IconButton::from_name("supported", IconName::Supported)
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, _| {
+                                project.toggle_supported_mods_only();
+                            });
+                        }))
+                        .icon_color(Hsla::from(rgba({
+                            if self
+                                .project
+                                .read_with(cx, |project, _| project.show_supported_mods_only())
+                            {
+                                colors::SUCCESS_TEXT
+                            } else {
+                                colors::TEXT
+                            }
+                        })))
+                        .tooltip(Tooltip::text("Show only supported mods")),
                     IconButton::from_name("reload", IconName::Reload)
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.project.update(cx, |project, cx| {
