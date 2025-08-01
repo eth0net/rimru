@@ -473,7 +473,21 @@ impl Project {
             let mod_name = &mod_meta.name;
             let mut mod_issues = ModIssues::new(mod_id.clone());
 
-            // 1. Check for missing dependencies
+            // Check game version compatibility
+            if let Some(config) = &self.mods_config {
+                let game_version = config.minor_version();
+                if !mod_meta.supported_versions.contains(&game_version) {
+                    log::warn!(
+                        "Mod '{}' ({}) is not compatible with game version '{}'",
+                        mod_name,
+                        mod_id,
+                        game_version
+                    );
+                    mod_issues.add_unsupported_game_version(game_version);
+                }
+            }
+
+            // Check for missing dependencies
             for dep_id in mod_meta.dependencies.keys() {
                 let dep_id_lc = dep_id.to_ascii_lowercase();
                 let dep_name = mod_map
@@ -492,7 +506,7 @@ impl Project {
                 }
             }
 
-            // 2. Check load_after/force_load_after: these mods must come before this mod
+            // Check load_after/force_load_after: these mods must come before this mod
             for after_id in mod_meta
                 .load_after
                 .iter()
@@ -517,7 +531,7 @@ impl Project {
                 }
             }
 
-            // 3. Check load_before/force_load_before: these mods must come after this mod
+            // Check load_before/force_load_before: these mods must come after this mod
             for before_id in mod_meta
                 .load_before
                 .iter()

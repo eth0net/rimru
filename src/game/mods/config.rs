@@ -28,6 +28,14 @@ impl ModsConfigData {
         backup_config(path);
         save_config_to_file(path, self);
     }
+
+    pub fn minor_version(&self) -> String {
+        self.version
+            .split('.')
+            .take(2)
+            .collect::<Vec<_>>()
+            .join(".")
+    }
 }
 
 fn load_config_from_file(path: &Path) -> Option<ModsConfigData> {

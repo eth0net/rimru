@@ -87,29 +87,23 @@ impl RenderOnce for ModListItem {
                     .text_ellipsis()
                     .child(mod_name.clone()),
             )
-            // todo: indicate if mod is incompatible with game version
-            // todo: indicate if the mod has any load order conflicts
             .when_some(self.mod_issues, |this, issues: ModIssues| {
                 this.child(div().flex().flex_row().items_center().px_2().child({
                     let id = format!("{mod_name}-issues");
 
-                    let icon = if issues.has_errors() {
-                        IconName::Error
-                    } else if issues.has_warnings() {
-                        IconName::Warning
-                    } else {
-                        // todo: info?
-                        IconName::Warning
+                    let icon = match issues.has_errors() {
+                        true => IconName::Error,
+                        false => IconName::Warning,
                     };
 
                     IconButton::from_name(SharedString::from(id), icon)
                         .style(ButtonStyle::Transparent)
                         .tooltip(Tooltip::text(issues.to_string()))
-                        .when(issues.has_errors(), |el| {
-                            el.icon_color(Hsla::from(rgba(colors::ERROR_TEXT)))
-                        })
                         .when(issues.has_warnings(), |el| {
                             el.icon_color(Hsla::from(rgba(colors::WARNING_TEXT)))
+                        })
+                        .when(issues.has_errors(), |el| {
+                            el.icon_color(Hsla::from(rgba(colors::ERROR_TEXT)))
                         })
                 }))
             })

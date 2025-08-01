@@ -26,6 +26,7 @@ pub struct ModMetaData {
     pub force_load_after: BTreeSet<String>,
     pub force_load_before: BTreeSet<String>,
     pub steam_app_id: Option<String>,
+    pub supported_versions: Vec<String>,
     pub path: PathBuf,
     pub source: Source,
     pub created: Option<SystemTime>,

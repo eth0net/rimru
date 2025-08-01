@@ -165,8 +165,7 @@ fn parse_mod_metadata_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("supportedVersions") =>
             {
-                // todo: read and process the elements
-                skip_element(events)?;
+                mod_meta.supported_versions = parse_string_list(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("url") =>
