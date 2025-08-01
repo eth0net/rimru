@@ -101,12 +101,12 @@ fn parse_mods_config_data<R: Read>(
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("activeMods") =>
             {
-                config.active_mods = parse_string_list(events, path, &name.local_name)?;
+                config.active_mods = parse_string_collection(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("knownExpansions") =>
             {
-                config.known_expansions = parse_string_list(events, path, &name.local_name)?;
+                config.known_expansions = parse_string_collection(events, path, &name.local_name)?;
             }
             Ok(ReaderEvent::StartElement { name, .. })
                 if name.local_name.eq_ignore_ascii_case("version") =>
