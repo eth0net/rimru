@@ -143,6 +143,10 @@ impl ModMetaData {
     pub fn force_load_before(&self, id: &str) -> bool {
         self.force_load_before.contains(id)
     }
+
+    pub fn incompatible_with(&self, id: &str) -> bool {
+        self.incompatible_with.contains(id)
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]

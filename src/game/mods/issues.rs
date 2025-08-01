@@ -6,6 +6,7 @@ pub struct ModIssues {
     pub unsupported_game_version: Option<String>, // e.g. "1.0"
     pub missing_dependencies: Vec<String>,
     pub load_order_violations: Vec<String>, // mods violating load_after/before rules
+    pub incompatible_with: Vec<String>,     // mods that are incompatible with this mod
 }
 
 impl ModIssues {
@@ -15,6 +16,7 @@ impl ModIssues {
             unsupported_game_version: None,
             missing_dependencies: Vec::new(),
             load_order_violations: Vec::new(),
+            incompatible_with: Vec::new(),
         }
     }
 
@@ -30,6 +32,10 @@ impl ModIssues {
         self.load_order_violations.push(violation);
     }
 
+    pub fn add_incompatible_with(&mut self, mod_id: String) {
+        self.incompatible_with.push(mod_id);
+    }
+
     pub fn has_issues(&self) -> bool {
         self.has_warnings() || self.has_errors()
     }
@@ -39,7 +45,9 @@ impl ModIssues {
     }
 
     pub fn has_errors(&self) -> bool {
-        self.unsupported_game_version.is_some() || !self.missing_dependencies.is_empty()
+        self.unsupported_game_version.is_some()
+            || !self.missing_dependencies.is_empty()
+            || !self.incompatible_with.is_empty()
     }
 }
 
@@ -62,6 +70,13 @@ impl Display for ModIssues {
             sections.push(format!(
                 "Load order violations:\n- {}",
                 self.load_order_violations.join("\n- ")
+            ));
+        }
+
+        if !self.incompatible_with.is_empty() {
+            sections.push(format!(
+                "Incompatible with:\n- {}",
+                self.incompatible_with.join("\n- ")
             ));
         }
 

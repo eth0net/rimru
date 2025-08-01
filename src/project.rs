@@ -592,6 +592,25 @@ impl Project {
                 }
             }
 
+            // Check incompatible_with: these mods must not be active
+            for incompatible_id in &mod_meta.incompatible_with {
+                let incompatible_id_lc = incompatible_id.to_ascii_lowercase();
+                if active_id_set.contains(&incompatible_id_lc) {
+                    let incompatible_name = mod_map
+                        .get(&incompatible_id_lc)
+                        .map(|m| m.name.as_str())
+                        .unwrap_or("<unknown>");
+                    log::warn!(
+                        "Mod '{}' ({}) is incompatible with '{}' ({})",
+                        mod_name,
+                        mod_id,
+                        incompatible_name,
+                        incompatible_id
+                    );
+                    mod_issues.add_incompatible_with(incompatible_id.clone());
+                }
+            }
+
             if mod_issues.has_issues() {
                 issues.insert(mod_id.to_ascii_lowercase(), mod_issues);
             }
