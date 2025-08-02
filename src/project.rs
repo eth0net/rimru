@@ -19,6 +19,8 @@ pub struct Project {
     mods: Vec<ModMetaData>,
     /// list of active mod ids, sourced from the config or save file
     active_mod_ids: Vec<String>,
+    /// order of inactive mods, used for sorting and displaying
+    inactive_mods_order: Order,
     /// cached list of active mods
     cached_active_mods: Vec<ModMetaData>,
     /// cached list of inactive mods
@@ -40,6 +42,7 @@ impl Project {
             mods_config: None,
             mods: Vec::new(),
             active_mod_ids: Vec::new(),
+            inactive_mods_order: Order::Name,
             cached_active_mods: Vec::new(),
             cached_inactive_mods: Vec::new(),
             selected_mod: None,
@@ -209,11 +212,12 @@ impl Project {
 
     pub fn cache_mods(&mut self) {
         log::debug!("refreshing cached mods");
-        let (mut active, inactive): (Vec<_>, Vec<_>) = self.mods.iter().cloned().partition(|m| {
-            let mod_id = m.id.to_ascii_lowercase();
-            self.active_mod_ids.contains(&mod_id)
-                || (m.source.is_steam() && self.active_mod_ids.contains(&(mod_id + "_steam")))
-        });
+        let (mut active, mut inactive): (Vec<_>, Vec<_>) =
+            self.mods.iter().cloned().partition(|m| {
+                let mod_id = m.id.to_ascii_lowercase();
+                self.active_mod_ids.contains(&mod_id)
+                    || (m.source.is_steam() && self.active_mod_ids.contains(&(mod_id + "_steam")))
+            });
 
         active.sort_by(|a, b| {
             let a_index = self
@@ -232,6 +236,8 @@ impl Project {
                 other => other,
             }
         });
+
+        inactive.sort_by(self.inactive_mods_order.sort_fn());
 
         self.cached_active_mods = active;
         self.cached_inactive_mods = inactive;
@@ -313,6 +319,21 @@ impl Project {
             .collect();
         self.cached_active_mods = active_mods;
         self.update_mod_issues();
+    }
+
+    pub fn cycle_inactive_mods_order(&mut self) {
+        log::debug!("cycling inactive mods order");
+        self.inactive_mods_order = match self.inactive_mods_order {
+            Order::Name => Order::Id,
+            Order::Id => Order::Created,
+            Order::Created => Order::Modified,
+            Order::Modified => Order::Name,
+            _ => Order::Name,
+        };
+    }
+
+    pub fn inactive_mods_order(&self) -> Order {
+        self.inactive_mods_order
     }
 
     pub fn toggle_supported_mods_only(&mut self) {

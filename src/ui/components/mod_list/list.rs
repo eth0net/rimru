@@ -60,6 +60,9 @@ impl ModList {
     fn render_header(&mut self, cx: &mut Context<Self>) -> Div {
         let mods = self.mods_for_list_type(cx).len();
         let filtered_mods = self.filtered_mods_for_list_type(cx).len();
+        let inactive_order = self
+            .project
+            .read_with(cx, |project, _| project.inactive_mods_order());
 
         let mods_str = match mods == filtered_mods {
             true => mods.to_string(),
@@ -110,6 +113,16 @@ impl ModList {
             }
             ModListType::Inactive => {
                 vec![
+                    IconButton::from_name("sort", IconName::Sort)
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.project.update(cx, |project, _| {
+                                project.cycle_inactive_mods_order();
+                                project.cache_mods();
+                            });
+                        }))
+                        .tooltip(Tooltip::text(format!(
+                            "Sort inactive mods by {inactive_order}"
+                        ))),
                     IconButton::from_name("supported", IconName::Supported)
                         .on_click(cx.listener(|this, _, _, cx| {
                             this.project.update(cx, |project, _| {
@@ -173,8 +186,6 @@ impl ModList {
             )
     }
 
-    // todo: add sort by added, updated, name, id etc to inactive list
-    // todo: add search bar to filter mods in this list
     // todo: preload images for visible mods in this list
     fn render_list(&self, cx: &mut Context<Self>) -> UniformList {
         let mods = self.filtered_mods_for_list_type(cx);

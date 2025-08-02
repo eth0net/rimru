@@ -1,8 +1,9 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, fmt::Display};
 
 use crate::game::mods::ModMetaData;
 
 /// Sort order for mods
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Order {
     /// Sort alphabetically by name
     Name,
@@ -28,6 +29,19 @@ impl Order {
             Order::Modified => cmp_modified,
             Order::Dependencies => cmp_dependencies,
             Order::Topological => cmp_topological,
+        }
+    }
+}
+
+impl Display for Order {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Order::Id => write!(f, "ID"),
+            Order::Name => write!(f, "Name"),
+            Order::Created => write!(f, "Date Created"),
+            Order::Modified => write!(f, "Date Modified"),
+            Order::Dependencies => write!(f, "Dependencies"),
+            Order::Topological => write!(f, "Topological"),
         }
     }
 }
