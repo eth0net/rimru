@@ -57,6 +57,8 @@ impl ModList {
         }
     }
 
+    // todo: move search to new line - possible setting to toggle advanced search on new line
+    // todo: add search controls (case sensitive, regex, etc.)
     fn render_header(&mut self, cx: &mut Context<Self>) -> Div {
         let mods = self.mods_for_list_type(cx).len();
         let filtered_mods = self.filtered_mods_for_list_type(cx).len();
@@ -325,6 +327,9 @@ impl ModList {
             })
     }
 
+    // todo: support case-insensitive search - case sensitive toggle + smart activation
+    // todo: support selecting which fields to search (name, id, description, etc.)
+    // todo: support regex search
     fn filtered_mods_for_list_type(&self, cx: &mut Context<Self>) -> Vec<ModMetaData> {
         let search = self.search_text.to_string();
         let is_inactive = self.list_type == ModListType::Inactive;

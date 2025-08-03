@@ -9,6 +9,7 @@ use gpui::{Context, Entity};
 
 use crate::{game::mods::*, settings::Settings};
 
+// todo: add mod tagging system for custom filtering
 #[derive(Debug, Clone)]
 pub struct Project {
     /// rimru settings
@@ -35,6 +36,7 @@ pub struct Project {
     supported_mods_only: bool,
 }
 
+// todo: refactor this into more modules for simple maintenance
 impl Project {
     pub fn new(cx: &mut Context<Self>, settings: Entity<Settings>) -> Self {
         let mut project = Self {
