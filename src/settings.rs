@@ -13,6 +13,8 @@ pub struct Settings {
     local_mods_dir: PathBuf,
     steam_mods_dir: PathBuf,
     config_dir: PathBuf,
+
+    separate_search_bar: bool,
 }
 
 impl Settings {
@@ -64,6 +66,14 @@ impl Settings {
         game::paths::mods_config_file(&self.config_dir)
     }
 
+    pub fn set_separate_search_bar(&mut self, separate_search_bar: bool) {
+        self.separate_search_bar = separate_search_bar;
+    }
+
+    pub fn separate_search_bar(&self) -> bool {
+        self.separate_search_bar
+    }
+
     pub fn load_or_default() -> Self {
         Self::load().unwrap_or_default()
     }
@@ -111,6 +121,7 @@ impl Default for Settings {
             local_mods_dir,
             steam_mods_dir,
             config_dir,
+            separate_search_bar: true,
         }
     }
 }

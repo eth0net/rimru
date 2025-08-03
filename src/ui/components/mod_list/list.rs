@@ -7,6 +7,7 @@ use gpui::{
 use crate::{
     game::mods::{ModIssues, ModMetaData},
     project::Project,
+    settings::Settings,
     theme::colors,
     ui::{TextInput, TextInputEvent, prelude::*},
 };
@@ -15,6 +16,7 @@ use super::ModListItem;
 
 pub struct ModList {
     project: Entity<Project>,
+    settings: Entity<Settings>,
     text_input: Entity<TextInput>,
     focus_handle: FocusHandle,
     list_name: SharedString,
@@ -36,6 +38,8 @@ impl ModList {
         let focus_handle = cx.focus_handle();
         let list_name = SharedString::from(list_type.to_string());
 
+        let settings = project.read_with(cx, |project, _| project.settings());
+
         let text_input = TextInput::new(cx);
         text_input.update(cx, |input, _| {
             input.placeholder("Search mods...");
@@ -48,6 +52,7 @@ impl ModList {
 
         Self {
             project,
+            settings,
             text_input,
             focus_handle,
             list_name,
@@ -65,6 +70,10 @@ impl ModList {
         let inactive_order = self
             .project
             .read_with(cx, |project, _| project.inactive_mods_order());
+
+        let separate_search_bar = self
+            .settings
+            .read_with(cx, |settings, _| settings.separate_search_bar());
 
         let mods_str = match mods == filtered_mods {
             true => mods.to_string(),
@@ -155,9 +164,7 @@ impl ModList {
 
         div()
             .flex()
-            .flex_row()
-            .justify_center()
-            .items_center()
+            .flex_col()
             .gap_2()
             .px_2()
             .py_2()
@@ -165,27 +172,47 @@ impl ModList {
                 div()
                     .flex()
                     .flex_row()
-                    .justify_center()
-                    .items_start()
-                    .pt_0p5()
-                    .child(format!("{} ({})", self.list_name, mods_str)),
-            )
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
+                    .justify_between()
                     .items_center()
-                    .flex_grow()
-                    .child(self.text_input.clone()),
+                    .gap_2()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .justify_center()
+                            .items_start()
+                            .pt_0p5()
+                            .child(format!("{} ({})", self.list_name, mods_str)),
+                    )
+                    .when(!separate_search_bar, |this| {
+                        this.child(
+                            div()
+                                .flex()
+                                .flex_row()
+                                .items_center()
+                                .gap_2()
+                                .child(self.text_input.clone()),
+                        )
+                    })
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .justify_center()
+                            .items_start()
+                            .children(buttons),
+                    ),
             )
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .justify_center()
-                    .items_start()
-                    .children(buttons),
-            )
+            .when(separate_search_bar, |this| {
+                this.child(
+                    div()
+                        .flex()
+                        .flex_row()
+                        .items_center()
+                        .gap_2()
+                        .child(self.text_input.clone()),
+                )
+            })
     }
 
     // todo: preload images for visible mods in this list

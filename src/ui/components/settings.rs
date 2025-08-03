@@ -14,6 +14,7 @@ pub struct SettingsPane {
     local_mods: Entity<TextInput>,
     steam_mods: Entity<TextInput>,
     config: Entity<TextInput>,
+    // todo: add toggle for separate search bar
 }
 
 impl SettingsPane {

@@ -204,6 +204,10 @@ impl Project {
         }
     }
 
+    pub fn settings(&self) -> Entity<Settings> {
+        self.settings.clone()
+    }
+
     pub fn active_mods(&self) -> Vec<ModMetaData> {
         self.cached_active_mods.clone()
     }
