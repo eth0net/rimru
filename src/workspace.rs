@@ -27,10 +27,12 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
-        let settings = cx.new(|_| Settings::load_or_default());
-        let project = cx.new(|cx| Project::new(cx, settings.clone()));
-
+    pub fn new(
+        settings: Entity<Settings>,
+        project: Entity<Project>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
         Self {
             project: project.clone(),
             // settings: settings.clone(),

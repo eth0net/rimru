@@ -5,6 +5,8 @@ use rimru::{
     actions::Quit,
     assets::Assets,
     menu,
+    project::Project,
+    settings::Settings,
     ui::{prelude::*, text_input::*},
     workspace::Workspace,
 };
@@ -37,6 +39,9 @@ fn main() {
             KeyBinding::new("end", End, Some("TextInput")),
         ]);
 
+        let settings = cx.new(|_| Settings::load_or_default());
+        let project = cx.new(|cx| Project::new(cx, settings.clone()));
+
         let bounds = Bounds::centered(None, size(px(1280.), px(720.)), cx);
         cx.open_window(
             WindowOptions {
@@ -54,7 +59,7 @@ fn main() {
                 // window_decorations: Some(WindowDecorations::Client),
                 ..Default::default()
             },
-            |window, cx| cx.new(|cx| Workspace::new(window, cx)),
+            |window, cx| cx.new(|cx| Workspace::new(settings, project, window, cx)),
         )
         .unwrap();
     });
