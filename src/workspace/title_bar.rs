@@ -9,15 +9,17 @@ use crate::{
 mod platforms;
 
 pub struct TitleBar {
+    app_version: &'static str,
     platform_style: PlatformStyle,
     // should_move: bool, // todo(linux)
 }
 
 impl TitleBar {
-    pub fn new() -> Self {
+    pub fn new(app_version: &'static str) -> Self {
         let platform_style = PlatformStyle::platform();
 
         Self {
+            app_version,
             platform_style,
             // should_move: false, // todo(linux)
         }
@@ -115,7 +117,7 @@ impl Render for TitleBar {
                             .items_center()
                             .gap_1()
                             .text_sm()
-                            .child("rimru".to_string()),
+                            .child(format!("rimru {}", self.app_version)),
                     ),
             )
             .when(!window.is_fullscreen(), |title_bar| {

@@ -28,6 +28,7 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(
+        app_version: &'static str,
         settings: Entity<Settings>,
         project: Entity<Project>,
         window: &mut Window,
@@ -36,7 +37,7 @@ impl Workspace {
         Self {
             project: project.clone(),
             // settings: settings.clone(),
-            title_bar: cx.new(|_| TitleBar::new()),
+            title_bar: cx.new(|_| TitleBar::new(app_version)),
             main_pane: cx.new(|cx| MainPane::new(project.clone(), cx)),
             settings_pane: cx.new(|cx| SettingsPane::new(settings.clone(), window, cx)),
             status_bar: cx.new(|_| StatusBar::new(project.clone())),

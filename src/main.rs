@@ -13,7 +13,10 @@ use rimru::{
 
 fn main() {
     env_logger::init();
-    log::info!("======== starting rimru ========");
+
+    let app_version = env!("CARGO_PKG_VERSION");
+
+    log::info!("======== starting rimru {app_version} ========");
 
     let app = Application::new().with_assets(Assets);
 
@@ -59,7 +62,7 @@ fn main() {
                 // window_decorations: Some(WindowDecorations::Client),
                 ..Default::default()
             },
-            |window, cx| cx.new(|cx| Workspace::new(settings, project, window, cx)),
+            |window, cx| cx.new(|cx| Workspace::new(app_version, settings, project, window, cx)),
         )
         .unwrap();
     });
