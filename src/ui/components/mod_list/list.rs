@@ -22,6 +22,7 @@ pub struct ModList {
     list_name: SharedString,
     list_type: ModListType,
     search_text: SharedString,
+    case_sensitive: bool,
     mouse_down: bool,
 }
 
@@ -45,8 +46,11 @@ impl ModList {
             input.placeholder("Search mods...");
         });
 
-        cx.subscribe(&text_input, |this, _, event, _| match event {
-            TextInputEvent::ContentChanged { content } => this.search_text = content.into(),
+        cx.subscribe(&text_input, |list, _input, event, cx| match event {
+            TextInputEvent::ContentChanged { content } => {
+                list.search_text = content.into();
+                list.smart_case(cx);
+            }
         })
         .detach();
 
@@ -58,6 +62,7 @@ impl ModList {
             list_name,
             list_type,
             search_text: "".into(),
+            case_sensitive: false,
             mouse_down: false,
         }
     }
@@ -376,8 +381,13 @@ impl ModList {
             .filter(|mod_meta| {
                 // Search filter
                 (search.is_empty()
-                    || mod_meta.name.contains(&search)
-                    || mod_meta.id.contains(&search))
+                    || if self.case_sensitive {
+                        mod_meta.name.contains(&search) || mod_meta.id.contains(&search)
+                    } else {
+                        let search_lower = search.to_lowercase();
+                        mod_meta.name.to_lowercase().contains(&search_lower)
+                            || mod_meta.id.to_lowercase().contains(&search_lower)
+                    })
                 // Supported mods filter (only for inactive list)
                 && (!show_supported_only
                     || match &game_version {
@@ -403,6 +413,22 @@ impl ModList {
                 log::error!("error moving {source} to {target}: {e}");
             }
         });
+    }
+
+    fn smart_case(&mut self, cx: &mut Context<Self>) {
+        if self
+            .settings
+            .read_with(cx, |settings, _cx| settings.smart_search())
+        {
+            let search = self.search_text.to_string();
+            if !search.is_empty() {
+                let is_case = search.chars().any(|c| c.is_uppercase());
+                if self.case_sensitive != is_case {
+                    log::debug!("smart case toggle: {}", is_case);
+                    self.case_sensitive = !self.case_sensitive;
+                }
+            }
+        }
     }
 }
 

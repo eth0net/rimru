@@ -15,6 +15,7 @@ pub struct Settings {
     config_dir: PathBuf,
 
     separate_search_bar: bool,
+    smart_search: bool,
 }
 
 impl Settings {
@@ -74,6 +75,14 @@ impl Settings {
         self.separate_search_bar
     }
 
+    pub fn set_smart_search(&mut self, smart_search: bool) {
+        self.smart_search = smart_search;
+    }
+
+    pub fn smart_search(&self) -> bool {
+        self.smart_search
+    }
+
     pub fn load_or_default() -> Self {
         Self::load().unwrap_or_default()
     }
@@ -122,6 +131,7 @@ impl Default for Settings {
             steam_mods_dir,
             config_dir,
             separate_search_bar: true,
+            smart_search: true,
         }
     }
 }
