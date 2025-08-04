@@ -194,9 +194,28 @@ impl ModList {
                             div()
                                 .flex()
                                 .flex_row()
+                                .flex_grow()
                                 .items_center()
                                 .gap_2()
-                                .child(self.text_input.clone()),
+                                .child(self.text_input.clone())
+                                .child(
+                                    div().flex().flex_row().items_center().gap_1().child(
+                                        IconButton::from_name(
+                                            "case sensitive",
+                                            IconName::CaseSensitive,
+                                        )
+                                        .on_click(cx.listener(|this, _, _, _| {
+                                            this.case_sensitive = !this.case_sensitive;
+                                        }))
+                                        .icon_color(Hsla::from(rgba({
+                                            match self.case_sensitive {
+                                                true => colors::SUCCESS_TEXT,
+                                                false => colors::TEXT,
+                                            }
+                                        })))
+                                        .tooltip(Tooltip::text("Toggle case sensitivity")),
+                                    ),
+                                ),
                         )
                     })
                     .child(
@@ -215,7 +234,22 @@ impl ModList {
                         .flex_row()
                         .items_center()
                         .gap_2()
-                        .child(self.text_input.clone()),
+                        .child(self.text_input.clone())
+                        .child(
+                            div().flex().flex_row().items_center().gap_1().child(
+                                IconButton::from_name("case sensitive", IconName::CaseSensitive)
+                                    .on_click(cx.listener(|this, _, _, _| {
+                                        this.case_sensitive = !this.case_sensitive;
+                                    }))
+                                    .icon_color(Hsla::from(rgba({
+                                        match self.case_sensitive {
+                                            true => colors::SUCCESS_TEXT,
+                                            false => colors::TEXT,
+                                        }
+                                    })))
+                                    .tooltip(Tooltip::text("Toggle case sensitivity")),
+                            ),
+                        ),
                 )
             })
     }

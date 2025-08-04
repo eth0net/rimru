@@ -4,7 +4,8 @@ use crate::{theme::colors, ui::prelude::*};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IconName {
-    // Actions
+    // Controls
+    CaseSensitive,
     Clear,
     Reload,
     Reset,
@@ -27,6 +28,7 @@ impl IconName {
     pub fn path(&self) -> &'static str {
         match self {
             IconName::Clear => "icons/list-x.svg",
+            IconName::CaseSensitive => "icons/a-large-small.svg",
             IconName::Reload => "icons/folder-sync.svg",
             IconName::Reset => "icons/list-restart.svg",
             IconName::Save => "icons/save.svg",

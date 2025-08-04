@@ -19,6 +19,8 @@ pub struct Settings {
     /// The directory where configuration files are stored.
     config_dir: PathBuf,
 
+    /// Show advanced search controls for the mod search bar.
+    advanced_search: bool,
     /// Separate the search bar from mod list controls.
     separate_search_bar: bool,
     /// Automatically activate case sensitivity if searches contain uppercase letters.
@@ -155,6 +157,8 @@ impl Default for Settings {
             local_mods_dir,
             steam_mods_dir,
             config_dir,
+
+            advanced_search: true,
             separate_search_bar: true,
             smart_search: true,
         }
