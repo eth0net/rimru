@@ -4,7 +4,7 @@ use gpui::{
 use rimru::{
     actions::Quit,
     assets::Assets,
-    menu,
+    db, menu,
     project::Project,
     settings::Settings,
     ui::{prelude::*, text_input::*},
@@ -43,7 +43,10 @@ fn main() {
         ]);
 
         let settings = cx.new(|_| Settings::load_or_default());
-        let project = cx.new(|cx| Project::new(cx, settings.clone()));
+        // Initialize the database pool
+        let db_pool = db::init();
+
+        let project = cx.new(|cx| Project::new(cx, settings.clone(), db_pool.clone()));
 
         let bounds = Bounds::centered(None, size(px(1280.), px(720.)), cx);
         cx.open_window(

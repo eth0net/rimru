@@ -5,40 +5,58 @@ use std::{
 };
 
 use anyhow::Context as _;
+use chrono::Utc;
 use gpui::{Context, Entity};
 
-use crate::{game::mods::*, settings::Settings};
+use crate::{
+    db::{ModEvent, ModEventStore, SharedDbPool, SqliteModEventStore},
+    game::mods::*,
+    settings::Settings,
+};
 
 // todo: add mod tagging system for custom filtering
 #[derive(Debug, Clone)]
 pub struct Project {
     /// rimru settings
     settings: Entity<Settings>,
+
     /// mods configuration loaded from the game
     mods_config: Option<ModsConfigData>,
+
     /// list of all installed mods (local and steam)
     mods: Vec<ModMetaData>,
+
     /// list of active mod ids, sourced from the config or save file
     active_mod_ids: Vec<String>,
+
     /// order of inactive mods, used for sorting and displaying
     inactive_mods_order: Order,
+
     /// cached list of active mods
     cached_active_mods: Vec<ModMetaData>,
+
     /// cached list of inactive mods
     cached_inactive_mods: Vec<ModMetaData>,
+
     /// current selected mod in rimru
     selected_mod: Option<ModMetaData>,
+
     /// flag to indicate if settings pane is open
     settings_open: bool,
+
     /// map of mod id (lowercase) to mod issues
     mod_issues: HashMap<String, ModIssues>,
+
     /// flag to indicate if only supported mods should be shown
     supported_mods_only: bool,
+
+    /// shared database pool for mod event history
+    db_pool: SharedDbPool,
 }
 
 // todo: refactor this into more modules for simple maintenance
 impl Project {
-    pub fn new(cx: &mut Context<Self>, settings: Entity<Settings>) -> Self {
+    pub fn new(cx: &mut Context<Self>, settings: Entity<Settings>, db_pool: SharedDbPool) -> Self {
         let mut project = Self {
             settings,
             mods_config: None,
@@ -51,12 +69,14 @@ impl Project {
             settings_open: false,
             mod_issues: HashMap::new(),
             supported_mods_only: false,
+            db_pool: db_pool.clone(),
         };
 
         project.load_mods_config(cx);
         project.load_mods(cx);
         project.apply_mods_config();
         project.update_mod_issues();
+        project.sync_mod_events_with_db();
         project
     }
 
@@ -201,6 +221,130 @@ impl Project {
                 });
             }
             Err(_) => log::warn!("could not read directory"),
+        }
+    }
+
+    /// Syncs mod events (install, uninstall, update) with the database after loading mods.
+    pub fn sync_mod_events_with_db(&self) {
+        let event_store = SqliteModEventStore::new(self.db_pool.clone());
+
+        // Get previous state from DB
+        let previous_events = match event_store.get_latest_events() {
+            Ok(events) => events,
+            Err(e) => {
+                log::error!("Failed to get latest mod events from DB: {e}");
+                return;
+            }
+        };
+        let prev_map: HashMap<String, ModEvent> = previous_events
+            .into_iter()
+            .map(|e| (e.mod_id.clone(), e))
+            .collect();
+
+        // Current state from loaded mods
+        let curr_map: HashMap<String, &ModMetaData> =
+            self.mods.iter().map(|m| (m.id.clone(), m)).collect();
+
+        // Track which mods have changed
+        let now = Utc::now().to_rfc3339();
+
+        let mut install_events = Vec::new();
+        let mut update_events = Vec::new();
+        let mut uninstall_events = Vec::new();
+
+        // Installs and updates
+        for (mod_id, mod_meta) in &curr_map {
+            match prev_map.get(mod_id) {
+                None => {
+                    // New mod: install event
+                    let event = ModEvent {
+                        event_id: 0,
+                        mod_id: mod_id.clone(),
+                        source: mod_meta.source.clone(),
+                        steam_app_id: mod_meta.steam_app_id.clone(),
+                        event_type: "install".to_string(),
+                        timestamp: now.clone(),
+                        version: mod_meta.version.clone(),
+                        path: mod_meta.path.to_string_lossy().to_string(),
+                        name: mod_meta.name.clone(),
+                        authors: Some(mod_meta.authors.join(", ")),
+                        created: mod_meta.created.map(|t| format!("{:?}", t)),
+                        modified: mod_meta.modified.map(|t| format!("{:?}", t)),
+                    };
+                    install_events.push(event);
+                    log::debug!("Detected install event for mod {mod_id}");
+                }
+                Some(prev_event) => {
+                    // Check for update: version, path, modified
+                    let version_changed = prev_event.version != mod_meta.version;
+                    let path_changed = prev_event.path != mod_meta.path.to_string_lossy();
+                    let modified_changed =
+                        prev_event.modified != mod_meta.modified.map(|t| format!("{:?}", t));
+                    if version_changed || path_changed || modified_changed {
+                        let event = ModEvent {
+                            event_id: 0,
+                            mod_id: mod_id.clone(),
+                            source: mod_meta.source.clone(),
+                            steam_app_id: mod_meta.steam_app_id.clone(),
+                            event_type: "update".to_string(),
+                            timestamp: now.clone(),
+                            version: mod_meta.version.clone(),
+                            path: mod_meta.path.to_string_lossy().to_string(),
+                            name: mod_meta.name.clone(),
+                            authors: Some(mod_meta.authors.join(", ")),
+                            created: mod_meta.created.map(|t| format!("{:?}", t)),
+                            modified: mod_meta.modified.map(|t| format!("{:?}", t)),
+                        };
+                        update_events.push(event);
+                        log::debug!("Detected update event for mod {mod_id}");
+                    }
+                }
+            }
+        }
+
+        // Uninstalls
+        for (mod_id, prev_event) in &prev_map {
+            if !curr_map.contains_key(mod_id) {
+                let event = ModEvent {
+                    event_id: 0,
+                    mod_id: mod_id.clone(),
+                    source: prev_event.source.clone(),
+                    steam_app_id: prev_event.steam_app_id.clone(),
+                    event_type: "uninstall".to_string(),
+                    timestamp: now.clone(),
+                    version: prev_event.version.clone(),
+                    path: prev_event.path.clone(),
+                    name: prev_event.name.clone(),
+                    authors: prev_event.authors.clone(),
+                    created: prev_event.created.clone(),
+                    modified: prev_event.modified.clone(),
+                };
+                uninstall_events.push(event);
+                log::debug!("Detected uninstall event for mod {mod_id}");
+            }
+        }
+
+        let total_installs = install_events.len();
+        let total_updates = update_events.len();
+        let total_uninstalls = uninstall_events.len();
+
+        let mut all_events = Vec::new();
+        all_events.extend(install_events);
+        all_events.extend(update_events);
+        all_events.extend(uninstall_events);
+
+        if !all_events.is_empty() {
+            match event_store.record_events(&all_events) {
+                Ok(_) => log::info!(
+                    "Synced mod events: {} installs, {} updates, {} uninstalls",
+                    total_installs,
+                    total_updates,
+                    total_uninstalls
+                ),
+                Err(e) => log::error!("Failed to record mod events in bulk: {e}"),
+            }
+        } else {
+            log::info!("No mod event changes detected during sync.");
         }
     }
 

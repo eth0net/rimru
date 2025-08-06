@@ -1,5 +1,6 @@
 pub mod actions;
 pub mod assets;
+pub mod db;
 pub mod game;
 pub mod menu;
 pub mod project;
