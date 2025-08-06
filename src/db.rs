@@ -6,11 +6,7 @@ use r2d2::{Pool, PooledConnection};
 use r2d2_sqlite::SqliteConnectionManager;
 use rusqlite::{Connection, Result as SqlResult};
 
-mod mod_event;
-pub use mod_event::ModEvent;
-
-mod mod_event_store;
-pub use mod_event_store::{ModEventStore, SqliteModEventStore};
+pub mod history;
 
 /// Returns the application's data directory (platform-specific).
 pub fn data_dir() -> PathBuf {
@@ -36,7 +32,7 @@ pub fn create_pool<P: AsRef<Path>>(db_path: P) -> DbPool {
     // Ensure parent directory exists
     if let Some(parent) = db_path.parent() {
         if let Err(e) = fs::create_dir_all(parent) {
-            panic!("Failed to create database directory {:?}: {}", parent, e);
+            panic!("Failed to create database directory {parent:?}: {e}");
         }
     }
 
@@ -68,17 +64,18 @@ pub fn run_migrations(conn: &Connection) -> SqlResult<()> {
     // Example: mod_events table
     conn.execute_batch(
         r#"
-        CREATE TABLE IF NOT EXISTS mod_events (
+        DROP TABLE IF EXISTS history;
+        CREATE TABLE IF NOT EXISTS history (
             event_id      INTEGER PRIMARY KEY AUTOINCREMENT,
-            mod_id        TEXT NOT NULL,
-            source        TEXT NOT NULL,
-            steam_app_id  TEXT,
             event_type    TEXT NOT NULL,
             timestamp     TEXT NOT NULL,
-            version       TEXT,
-            path          TEXT NOT NULL,
+            mod_id        TEXT NOT NULL,
             name          TEXT NOT NULL,
+            version       TEXT,
             authors       TEXT,
+            steam_app_id  TEXT,
+            path          TEXT NOT NULL,
+            source        TEXT NOT NULL,
             created       TEXT,
             modified      TEXT
         );

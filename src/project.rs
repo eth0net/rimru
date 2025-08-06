@@ -9,7 +9,8 @@ use chrono::Utc;
 use gpui::{Context, Entity};
 
 use crate::{
-    db::{ModEvent, ModEventStore, SharedDbPool, SqliteModEventStore},
+    db::SharedDbPool,
+    db::history::{Event, EventType, HistoryStore, SqliteHistoryStore},
     game::mods::*,
     settings::Settings,
 };
@@ -226,17 +227,17 @@ impl Project {
 
     /// Syncs mod events (install, uninstall, update) with the database after loading mods.
     pub fn sync_mod_events_with_db(&self) {
-        let event_store = SqliteModEventStore::new(self.db_pool.clone());
+        let history_store = SqliteHistoryStore::new(self.db_pool.clone());
 
         // Get previous state from DB
-        let previous_events = match event_store.get_latest_events() {
+        let previous_events = match history_store.get_latest_events() {
             Ok(events) => events,
             Err(e) => {
                 log::error!("Failed to get latest mod events from DB: {e}");
                 return;
             }
         };
-        let prev_map: HashMap<String, ModEvent> = previous_events
+        let prev_map: HashMap<String, Event> = previous_events
             .into_iter()
             .map(|e| (e.mod_id.clone(), e))
             .collect();
@@ -257,19 +258,19 @@ impl Project {
             match prev_map.get(mod_id) {
                 None => {
                     // New mod: install event
-                    let event = ModEvent {
+                    let event = Event {
                         event_id: 0,
                         mod_id: mod_id.clone(),
                         source: mod_meta.source.clone(),
                         steam_app_id: mod_meta.steam_app_id.clone(),
-                        event_type: "install".to_string(),
+                        event_type: EventType::Install,
                         timestamp: now.clone(),
                         version: mod_meta.version.clone(),
                         path: mod_meta.path.to_string_lossy().to_string(),
                         name: mod_meta.name.clone(),
                         authors: Some(mod_meta.authors.join(", ")),
-                        created: mod_meta.created.map(|t| format!("{:?}", t)),
-                        modified: mod_meta.modified.map(|t| format!("{:?}", t)),
+                        created: mod_meta.created.map(|t| format!("{t:?}")),
+                        modified: mod_meta.modified.map(|t| format!("{t:?}")),
                     };
                     install_events.push(event);
                     log::debug!("Detected install event for mod {mod_id}");
@@ -279,21 +280,21 @@ impl Project {
                     let version_changed = prev_event.version != mod_meta.version;
                     let path_changed = prev_event.path != mod_meta.path.to_string_lossy();
                     let modified_changed =
-                        prev_event.modified != mod_meta.modified.map(|t| format!("{:?}", t));
+                        prev_event.modified != mod_meta.modified.map(|t| format!("{t:?}"));
                     if version_changed || path_changed || modified_changed {
-                        let event = ModEvent {
+                        let event = Event {
                             event_id: 0,
                             mod_id: mod_id.clone(),
                             source: mod_meta.source.clone(),
                             steam_app_id: mod_meta.steam_app_id.clone(),
-                            event_type: "update".to_string(),
+                            event_type: EventType::Update,
                             timestamp: now.clone(),
                             version: mod_meta.version.clone(),
                             path: mod_meta.path.to_string_lossy().to_string(),
                             name: mod_meta.name.clone(),
                             authors: Some(mod_meta.authors.join(", ")),
-                            created: mod_meta.created.map(|t| format!("{:?}", t)),
-                            modified: mod_meta.modified.map(|t| format!("{:?}", t)),
+                            created: mod_meta.created.map(|t| format!("{t:?}")),
+                            modified: mod_meta.modified.map(|t| format!("{t:?}")),
                         };
                         update_events.push(event);
                         log::debug!("Detected update event for mod {mod_id}");
@@ -305,12 +306,12 @@ impl Project {
         // Uninstalls
         for (mod_id, prev_event) in &prev_map {
             if !curr_map.contains_key(mod_id) {
-                let event = ModEvent {
+                let event = Event {
                     event_id: 0,
                     mod_id: mod_id.clone(),
                     source: prev_event.source.clone(),
                     steam_app_id: prev_event.steam_app_id.clone(),
-                    event_type: "uninstall".to_string(),
+                    event_type: EventType::Uninstall,
                     timestamp: now.clone(),
                     version: prev_event.version.clone(),
                     path: prev_event.path.clone(),
@@ -334,12 +335,9 @@ impl Project {
         all_events.extend(uninstall_events);
 
         if !all_events.is_empty() {
-            match event_store.record_events(&all_events) {
+            match history_store.record_events(&all_events) {
                 Ok(_) => log::info!(
-                    "Synced mod events: {} installs, {} updates, {} uninstalls",
-                    total_installs,
-                    total_updates,
-                    total_uninstalls
+                    "Synced mod events: {total_installs} installs, {total_updates} updates, {total_uninstalls} uninstalls"
                 ),
                 Err(e) => log::error!("Failed to record mod events in bulk: {e}"),
             }
@@ -677,13 +675,10 @@ impl Project {
             if let Some(config) = &self.mods_config {
                 let game_version = config.minor_version();
                 if !mod_meta.supported_versions.contains(&game_version)
-                    && mod_id.to_ascii_lowercase() != "ludeon.rimworld"
+                    && !mod_id.eq_ignore_ascii_case("ludeon.rimworld")
                 {
                     log::warn!(
-                        "Mod '{}' ({}) is not compatible with game version '{}'",
-                        mod_name,
-                        mod_id,
-                        game_version
+                        "Mod '{mod_name}' ({mod_id}) is not compatible with game version '{game_version}'"
                     );
                     mod_issues.add_unsupported_game_version(game_version);
                 }
@@ -698,13 +693,9 @@ impl Project {
                     .unwrap_or("<unknown>");
                 if !active_id_set.contains(&dep_id_lc) {
                     log::warn!(
-                        "Mod '{}' ({}) is missing dependency '{}' ({})",
-                        mod_name,
-                        mod_id,
-                        dep_name,
-                        dep_id
+                        "Mod '{mod_name}' ({mod_id}) is missing dependency '{dep_name}' ({dep_id})"
                     );
-                    mod_issues.add_missing_dependency(format!("{} ({})", dep_name, dep_id));
+                    mod_issues.add_missing_dependency(format!("{dep_name} ({dep_id})"));
                 }
             }
 
@@ -721,13 +712,8 @@ impl Project {
                     .unwrap_or("<unknown>");
                 if let Some(&after_idx) = id_to_index.get(&after_id_lc) {
                     if after_idx > this_idx {
-                        let msg = format!("Should load after '{}' ({})", after_name, after_id);
-                        log::warn!(
-                            "Load order violation for '{}' ({}): {}",
-                            mod_name,
-                            mod_id,
-                            msg
-                        );
+                        let msg = format!("Should load after '{after_name}' ({after_id})");
+                        log::warn!("Load order violation for '{mod_name}' ({mod_id}): {msg}");
                         mod_issues.add_load_order_violation(msg);
                     }
                 }
@@ -746,13 +732,8 @@ impl Project {
                     .unwrap_or("<unknown>");
                 if let Some(&before_idx) = id_to_index.get(&before_id_lc) {
                     if before_idx < this_idx {
-                        let msg = format!("Should load before '{}' ({})", before_name, before_id);
-                        log::warn!(
-                            "Load order violation for '{}' ({}): {}",
-                            mod_name,
-                            mod_id,
-                            msg
-                        );
+                        let msg = format!("Should load before '{before_name}' ({before_id})");
+                        log::warn!("Load order violation for '{mod_name}' ({mod_id}): {msg}");
                         mod_issues.add_load_order_violation(msg);
                     }
                 }
@@ -767,11 +748,7 @@ impl Project {
                         .map(|m| m.name.as_str())
                         .unwrap_or("<unknown>");
                     log::warn!(
-                        "Mod '{}' ({}) is incompatible with '{}' ({})",
-                        mod_name,
-                        mod_id,
-                        incompatible_name,
-                        incompatible_id
+                        "Mod '{mod_name}' ({mod_id}) is incompatible with '{incompatible_name}' ({incompatible_id})"
                     );
                     mod_issues.add_incompatible_with(incompatible_id.clone());
                 }
@@ -804,7 +781,7 @@ impl Project {
                     continue;
                 }
                 if !mod_meta.supported_versions.contains(&game_version)
-                    && mod_id.to_ascii_lowercase() != "ludeon.rimworld"
+                    && !mod_id.eq_ignore_ascii_case("ludeon.rimworld")
                 {
                     let mut mod_issues = ModIssues::new(mod_id.clone());
                     log::warn!(

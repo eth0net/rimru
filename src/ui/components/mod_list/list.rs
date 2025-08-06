@@ -458,7 +458,7 @@ impl ModList {
             if !search.is_empty() {
                 let is_case = search.chars().any(|c| c.is_uppercase());
                 if self.case_sensitive != is_case {
-                    log::debug!("smart case toggle: {}", is_case);
+                    log::debug!("smart case toggle: {is_case}");
                     self.case_sensitive = !self.case_sensitive;
                 }
             }
