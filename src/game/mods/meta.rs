@@ -91,10 +91,10 @@ impl ModMetaData {
     pub fn new_steam(path: &Path) -> Result<Self, String> {
         Self::new(path).map(|mut mod_meta| {
             mod_meta.source = Source::Steam;
-            if mod_meta.steam_app_id.is_none() {
-                if let Some(dir_name) = mod_meta.path.file_name().and_then(|name| name.to_str()) {
-                    mod_meta.steam_app_id = Some(dir_name.to_string());
-                }
+            if mod_meta.steam_app_id.is_none()
+                && let Some(dir_name) = mod_meta.path.file_name().and_then(|name| name.to_str())
+            {
+                mod_meta.steam_app_id = Some(dir_name.to_string());
             }
             mod_meta
         })

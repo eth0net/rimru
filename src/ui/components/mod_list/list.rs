@@ -354,31 +354,33 @@ impl ModList {
             .on_click(cx.listener(move |this, event: &ClickEvent, _, cx| {
                 let mod_meta_entity = mod_meta.clone();
                 let mod_meta = mod_meta_entity.read(cx);
-                match event.down.button {
-                    MouseButton::Left => match event.down.click_count {
-                        1 => {
-                            log::debug!("select {mod_meta:?}");
-                            this.project.update(cx, {
-                                move |project, cx| {
+                if let ClickEvent::Mouse(mouse_event) = event {
+                    match mouse_event.down.button {
+                        MouseButton::Left => match mouse_event.down.click_count {
+                            1 => {
+                                log::debug!("select {mod_meta:?}");
+                                this.project.update(cx, {
+                                    move |project, cx| {
+                                        let mod_meta = mod_meta_entity.read(cx);
+                                        project.select_mod(mod_meta);
+                                    }
+                                });
+                            }
+                            2 => {
+                                log::debug!("toggle {mod_meta:?}");
+                                this.project.update(cx, move |project, cx| {
                                     let mod_meta = mod_meta_entity.read(cx);
-                                    project.select_mod(mod_meta);
-                                }
-                            });
+                                    project.toggle_mod(mod_meta);
+                                });
+                            }
+                            _ => {}
+                        },
+                        MouseButton::Right => {
+                            log::debug!("context menu {mod_meta:?}");
                         }
-                        2 => {
-                            log::debug!("toggle {mod_meta:?}");
-                            this.project.update(cx, move |project, cx| {
-                                let mod_meta = mod_meta_entity.read(cx);
-                                project.toggle_mod(mod_meta);
-                            });
+                        _ => {
+                            log::debug!("unhandled click {mod_meta:?}")
                         }
-                        _ => {}
-                    },
-                    MouseButton::Right => {
-                        log::debug!("context menu {mod_meta:?}");
-                    }
-                    _ => {
-                        log::debug!("unhandled click {mod_meta:?}")
                     }
                 }
             }))

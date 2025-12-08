@@ -30,10 +30,10 @@ pub fn create_pool<P: AsRef<Path>>(db_path: P) -> DbPool {
     let db_path = db_path.as_ref();
 
     // Ensure parent directory exists
-    if let Some(parent) = db_path.parent() {
-        if let Err(e) = fs::create_dir_all(parent) {
-            panic!("Failed to create database directory {parent:?}: {e}");
-        }
+    if let Some(parent) = db_path.parent()
+        && let Err(e) = fs::create_dir_all(parent)
+    {
+        panic!("Failed to create database directory {parent:?}: {e}");
     }
 
     let manager = SqliteConnectionManager::file(db_path);

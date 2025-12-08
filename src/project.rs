@@ -710,12 +710,13 @@ impl Project {
                     .get(&after_id_lc)
                     .map(|m| m.name.as_str())
                     .unwrap_or("<unknown>");
-                if let Some(&after_idx) = id_to_index.get(&after_id_lc) {
-                    if after_idx > this_idx {
-                        let msg = format!("Should load after '{after_name}' ({after_id})");
-                        log::warn!("Load order violation for '{mod_name}' ({mod_id}): {msg}");
-                        mod_issues.add_load_order_violation(msg);
-                    }
+                let Some(&after_idx) = id_to_index.get(&after_id_lc) else {
+                    continue;
+                };
+                if after_idx > this_idx {
+                    let msg = format!("Should load after '{after_name}' ({after_id})");
+                    log::warn!("Load order violation for '{mod_name}' ({mod_id}): {msg}");
+                    mod_issues.add_load_order_violation(msg);
                 }
             }
 
@@ -730,12 +731,13 @@ impl Project {
                     .get(&before_id_lc)
                     .map(|m| m.name.as_str())
                     .unwrap_or("<unknown>");
-                if let Some(&before_idx) = id_to_index.get(&before_id_lc) {
-                    if before_idx < this_idx {
-                        let msg = format!("Should load before '{before_name}' ({before_id})");
-                        log::warn!("Load order violation for '{mod_name}' ({mod_id}): {msg}");
-                        mod_issues.add_load_order_violation(msg);
-                    }
+                let Some(&before_idx) = id_to_index.get(&before_id_lc) else {
+                    continue;
+                };
+                if before_idx < this_idx {
+                    let msg = format!("Should load before '{before_name}' ({before_id})");
+                    log::warn!("Load order violation for '{mod_name}' ({mod_id}): {msg}");
+                    mod_issues.add_load_order_violation(msg);
                 }
             }
 
