@@ -1,0 +1,39 @@
+// Project tasks configuration. See https://zed.dev/docs/tasks for documentation.
+//
+// Example:
+[
+  {
+    "label": "cargo clean",
+    "command": "cargo clean",
+    "reveal": "no_focus"
+  },
+  {
+    "label": "cargo run",
+    "command": "cargo run",
+    "reveal": "no_focus"
+  },
+  {
+    "label": "cargo update",
+    "command": "cargo update",
+    "reveal": "no_focus"
+  },
+  {
+    "label": "cargo test",
+    "command": "cargo test",
+    "reveal": "no_focus"
+  },
+  {
+    "label": "cargo watch run",
+    "command": "cargo watch",
+    // clear, backtrace, log rimru, run
+    "args": ["-c", "-B", "1", "-L", "rimru", "-x", "run"],
+    "reveal": "no_focus"
+  },
+  {
+    "label": "cargo watch tests",
+    "command": "cargo watch",
+    // clear, backtrace, log rimru, test
+    "args": ["-c", "-B", "1", "-L", "rimru", "-x", "test"],
+    "reveal": "no_focus"
+  }
+]
